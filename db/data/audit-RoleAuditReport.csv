@@ -1,0 +1,102 @@
+ID,system,roleCollection,event,timestamp,changedByUserId,userRole,fieldChanged,oldValue,newValue,status,subaccountName
+1,SAP BTP,Finance_Admin,Create,2026-04-13T15:25:00Z,vanitha.n@incture.com,Security Admin,-,-,New Role Collection,Success,Incture-Test
+19,SAP BTP,Audit_Viewer,Remove,2026-04-13T19:55:00Z,ramesh.reddy@incture.com,Developer,Role Assignment,Assigned,Removed,Success,Incture-Dev
+48,SAP BTP,Audit_Viewer,Update,2026-03-14T03:10:00Z,vanitha.n@incture.com,BTP Admin,Priority,Low,High,Success,Incture-Dev
+51,SAP BTP,Audit_Viewer,Assign,2026-04-14T03:55:00Z,ramesh.reddy@incture.com,Developer,Role Assignment,Not Assigned,Assigned,Failure,Incture-Dev
+21,SAP BTP,Audit_Viewer,Assign,2026-04-13T20:25:00Z,rajeev.amerneni@incture.com,Developer,Role Assignment,Not Assigned,Assigned,Failure,Incture-Test
+33,SAP BTP,Audit_Viewer,Assign,2026-04-13T23:25:00Z,avinash.konatala@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-QA
+41,SAP BTP,Audit_Viewer,Update,2026-04-14T01:25:00Z,vanitha.n@incture.com,Audit Specialist,Role Template,Display Only Access,Full Access,Success,Incture-QA
+8,SAP BTP,Sales_Analyst,Create,2026-04-13T17:10:00Z,ramesh.reddy@incture.com,Developer,-,-,New Role Collection,Success,Incture-Test
+9,SAP BTP,Developer_Role,Create,2026-04-13T17:25:00Z,vanitha.n@incture.com,BTP Admin,-,-,New Role Collection,Success,Incture-Test
+3,SAP BTP,Developer_Role,Create,2026-03-13T15:55:00Z,avinash.konatala@incture.com,Security  Admin,-,-,Developer_Role,Success,Incture-Dev
+29,SAP BTP,Developer_Role,Assign,2026-03-13T15:56:00Z,avinash.konatala@incture.com,Security  Admin,Role Assignment,Not Assigned,Subaccount_Viewer,Success,Incture-Dev
+84,SAP BTP,Audit_Viewer,Update,2026-04-14T12:10:00Z,avinash.konatala@incture.com,Developer,Priority,Low,High,Success,Incture-QA
+89,SAP BTP,Audit_Viewer,Remove,2026-04-14T13:25:00Z,rajeev.amerneni@incture.com,Developer,Role Assignment,Assigned,Removed,Success,Incture-Prod
+11,SAP BTP,Developer_Role,Update,2026-04-13T17:55:00Z,vanitha.n@incture.com,BTP Admin,Priority,Low,High,Failure,Incture-Test
+30,SAP BTP,Developer_Role,Assign,2026-03-18T22:40:00Z,ramesh.reddy@incture.com,Security Admin,Role Assignment,Not Assigned,Destination_Administrator,Success,Incture-Dev
+42,SAP BTP,Developer_Role,Update,2026-03-25T01:40:00Z,rajeev.amerneni@incture.com,Security Admin,Description,Devlop Role,Developer_RoleCollection,Success,Incture-Dev
+32,SAP BTP,Developer_Role,Delete,2026-04-13T23:10:00Z,vanitha.n@incture.com,Audit Specialist,-,Existing Role Collection,Deleted,Failure,Incture-Test
+25,SAP BTP,Developer_Role,Remove,2026-03-31T21:25:00Z,ramesh.reddy@incture.com,BTP Admin,Role Assignment,Destination_Administrator,Removed,Success,Incture-Dev
+88,SAP BTP,Developer_Role,Delete,2026-04-14T13:10:00Z,mahesh.kumark@incture.com,BTP Admin,-,Developer_Role,Deleted,Success,Incture-Dev
+63,SAP BTP,Developer_Role,Remove,2026-04-14T06:55:00Z,avinash.konatala@incture.com,Audit Specialist,Role Assignment,Assigned,Removed,Success,Incture-Prod
+64,SAP BTP,Developer_Role,Assign,2026-04-14T07:10:00Z,rajeev.amerneni@incture.com,Security Admin,Role Assignment,Not Assigned,Assigned,Success,Incture-QA
+22,SAP BTP,Sales_Analyst,Create,2026-04-13T20:40:00Z,ramesh.reddy@incture.com,System Admin,-,-,New Role Collection,Success,Incture-Test
+72,SAP BTP,Developer_Role,Assign,2026-04-14T09:10:00Z,mahesh.kumark@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Failure,Incture-Test
+74,SAP BTP,Developer_Role,Update,2026-04-14T09:40:00Z,mahesh.kumark@incture.com,System Admin,Description,Standard access,Elevated permissions,Success,Incture-Prod
+40,SAP BTP,Finance_Admin,Remove,2026-04-14T01:10:00Z,avinash.konatala@incture.com,Audit Specialist,Role Assignment,Assigned,Removed,Success,Incture-Dev
+26,SAP BTP,Viewer_Access,Create,2026-04-13T21:40:00Z,avinash.konatala@incture.com,Audit Specialist,-,-,New Role Collection,Success,Incture-Test
+75,SAP BTP,Developer_Role,Remove,2026-04-14T09:55:00Z,ramesh.reddy@incture.com,Audit Specialist,Role Assignment,Assigned,Removed,Success,Incture-Test
+80,SAP BTP,Developer_Role,Remove,2026-04-14T11:10:00Z,avinash.konatala@incture.com,System Admin,Role Assignment,Assigned,Removed,Success,Incture-QA
+81,SAP BTP,Developer_Role,Delete,2026-04-14T11:25:00Z,rajeev.amerneni@incture.com,Audit Specialist,-,Existing Role Collection,Deleted,Success,Incture-Test
+85,SAP BTP,Developer_Role,Update,2026-04-14T12:25:00Z,vanitha.n@incture.com,Developer,Role Template,Display Only Access,Full Access,Failure,Incture-Prod
+31,SAP BTP,Developer_Role,Create,2026-04-13T22:55:00Z,rajeev.amerneni@incture.com,BTP Admin,-,-,New Role Collection,Success,Incture-Prod
+90,SAP BTP,Developer_Role,Remove,2026-04-14T13:40:00Z,mahesh.kumark@incture.com,Security Admin,Role Assignment,Assigned,Removed,Success,Incture-Prod
+99,SAP BTP,Developer_Role,Delete,2026-04-14T15:55:00Z,mahesh.kumark@incture.com,Developer,-,Existing Role Collection,Deleted,Success,Incture-Prod
+34,SAP BTP,Temp_Test_RC,Create,2026-04-13T23:40:00Z,mahesh.kumark@incture.com,Developer,-,-,New Role Collection,Success,Incture-QA
+24,SAP BTP,Finance_Admin,Remove,2026-04-13T21:10:00Z,rajeev.amerneni@incture.com,Developer,Role Assignment,Assigned,Removed,Success,Incture-Prod
+36,SAP BTP,Developer_Role,Create,2026-04-14T00:10:00Z,avinash.konatala@incture.com,Security Admin,-,-,New Role Collection,Success,Incture-QA
+35,SAP BTP,Finance_Admin,Remove,2026-04-13T23:55:00Z,rajeev.amerneni@incture.com,BTP Admin,Role Assignment,Assigned,Removed,Success,Incture-QA
+13,SAP BTP,HR_Manager,Assign,2026-04-13T18:25:00Z,rajeev.amerneni@incture.com,Security Admin,Role Assignment,Not Assigned,Assigned,Success,Incture-Dev
+59,SAP BTP,Finance_Admin,Update,2026-04-14T05:55:00Z,vanitha.n@incture.com,Security Admin,Description,Standard access,Elevated permissions,Success,Incture-Test
+77,SAP BTP,Finance_Admin,Assign,2026-04-14T10:25:00Z,rajeev.amerneni@incture.com,Security Admin,Role Assignment,Not Assigned,Assigned,Failure,Incture-QA
+91,SAP BTP,Finance_Admin,Remove,2026-04-14T13:55:00Z,mahesh.kumark@incture.com,Developer,Role Assignment,Assigned,Removed,Success,Incture-QA
+93,SAP BTP,Finance_Admin,Delete,2026-04-14T14:25:00Z,rajeev.amerneni@incture.com,Audit Specialist,-,Existing Role Collection,Deleted,Success,Incture-Test
+43,SAP BTP,Audit_Viewer,Create,2026-04-14T01:55:00Z,ramesh.reddy@incture.com,System Admin,-,-,New Role Collection,Success,Incture-Test
+94,SAP BTP,Finance_Admin,Assign,2026-04-14T14:40:00Z,vanitha.n@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-Prod
+7,SAP BTP,Sales_Analyst,Delete,2026-04-13T16:55:00Z,rajeev.amerneni@incture.com,Audit Specialist,-,Existing Role Collection,Deleted,Success,Incture-Dev
+46,SAP BTP,Support_Lead,Create,2026-04-14T02:40:00Z,ramesh.reddy@incture.com,System Admin,-,-,New Role Collection,Success,Incture-Prod
+28,SAP BTP,HR_Manager,Remove,2026-04-13T22:10:00Z,mahesh.kumark@incture.com,System Admin,Role Assignment,Assigned,Removed,Success,Incture-QA
+47,SAP BTP,HR_Manager,Assign,2026-04-14T02:55:00Z,avinash.konatala@incture.com,Developer,Role Assignment,Not Assigned,Assigned,Success,Incture-QA
+76,SAP BTP,HR_Manager,Update,2026-04-14T10:10:00Z,rajeev.amerneni@incture.com,Security Admin,Role Template,Display Only Access,Full Access,Success,Incture-Prod
+82,SAP BTP,HR_Manager,Delete,2026-04-14T11:40:00Z,mahesh.kumark@incture.com,System Admin,-,Existing Role Collection,Deleted,Failure,Incture-QA
+95,SAP BTP,HR_Manager,Remove,2026-04-14T14:55:00Z,vanitha.n@incture.com,Audit Specialist,Role Assignment,Assigned,Removed,Success,Incture-Prod
+73,SAP BTP,Sales_Analyst,Delete,2026-04-14T09:25:00Z,mahesh.kumark@incture.com,System Admin,-,Existing Role Collection,Deleted,Success,Incture-Dev
+10,SAP BTP,Sales_Analyst,Remove,2026-04-13T17:40:00Z,mahesh.kumark@incture.com,Developer,Role Assignment,Assigned,Removed,Success,Incture-Test
+14,SAP BTP,Sales_Analyst,Remove,2026-04-13T18:40:00Z,rajeev.amerneni@incture.com,Security Admin,Role Assignment,Assigned,Removed,Success,Incture-Prod
+55,SAP BTP,Support_Lead,Create,2026-04-14T04:55:00Z,vanitha.n@incture.com,BTP Admin,-,-,New Role Collection,Success,Incture-Dev
+16,SAP BTP,Sales_Analyst,Assign,2026-04-13T19:10:00Z,ramesh.reddy@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-QA
+79,SAP BTP,Support_Lead,Remove,2026-04-14T10:55:00Z,avinash.konatala@incture.com,Security Admin,Role Assignment,Assigned,Removed,Success,Incture-Dev
+20,SAP BTP,Sales_Analyst,Delete,2026-04-13T20:10:00Z,vanitha.n@incture.com,BTP Admin,-,Existing Role Collection,Deleted,Success,Incture-Prod
+54,SAP BTP,Sales_Analyst,Assign,2026-04-14T04:40:00Z,ramesh.reddy@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-Prod
+56,SAP BTP,Sales_Analyst,Assign,2026-04-14T05:10:00Z,avinash.konatala@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Failure,Incture-QA
+62,SAP BTP,Sales_Analyst,Assign,2026-04-14T06:40:00Z,avinash.konatala@incture.com,BTP Admin,Role Assignment,Not Assigned,Assigned,Success,Incture-QA
+71,SAP BTP,Sales_Analyst,Update,2026-04-14T08:55:00Z,mahesh.kumark@incture.com,Developer,Priority,Low,High,Success,Incture-QA
+2,SAP BTP,Temp_Test_RC,Create,2026-04-13T15:40:00Z,ramesh.reddy@incture.com,Audit Specialist,-,-,New Role Collection,Success,Incture-Dev
+4,SAP BTP,Support_Lead,Assign,2026-04-13T16:10:00Z,avinash.konatala@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-Prod
+5,SAP BTP,Support_Lead,Assign,2026-04-13T16:25:00Z,vanitha.n@incture.com,Developer,Role Assignment,Not Assigned,Assigned,Success,Incture-Test
+66,SAP BTP,Temp_Test_RC,Create,2026-04-14T07:40:00Z,vanitha.n@incture.com,Security Admin,-,-,New Role Collection,Success,Incture-Prod
+67,SAP BTP,Support_Lead,Create,2026-04-14T07:55:00Z,vanitha.n@incture.com,Developer,-,-,New Role Collection,Failure,Incture-QA
+15,SAP BTP,Support_Lead,Remove,2026-04-13T18:55:00Z,mahesh.kumark@incture.com,Security Admin,Role Assignment,Assigned,Removed,Success,Incture-Prod
+69,SAP BTP,Support_Lead,Create,2026-04-14T08:25:00Z,rajeev.amerneni@incture.com,System Admin,-,-,New Role Collection,Success,Incture-Test
+27,SAP BTP,Support_Lead,Delete,2026-04-13T21:55:00Z,avinash.konatala@incture.com,System Admin,-,Existing Role Collection,Deleted,Success,Incture-Test
+60,SAP BTP,Support_Lead,Delete,2026-04-14T06:10:00Z,ramesh.reddy@incture.com,Security Admin,-,Existing Role Collection,Deleted,Success,Incture-Test
+61,SAP BTP,Support_Lead,Assign,2026-04-14T06:25:00Z,rajeev.amerneni@incture.com,Security Admin,Role Assignment,Not Assigned,Assigned,Success,Incture-Prod
+57,SAP BTP,Temp_Test_RC,Create,2026-04-14T05:25:00Z,rajeev.amerneni@incture.com,Security Admin,-,-,New Role Collection,Success,Incture-Dev
+6,SAP BTP,Temp_Test_RC,Update,2026-04-13T16:40:00Z,rajeev.amerneni@incture.com,Audit Specialist,Description,Standard access,Elevated permissions,Success,Incture-Dev
+38,SAP BTP,Temp_Test_RC,Remove,2026-04-14T00:40:00Z,rajeev.amerneni@incture.com,System Admin,Role Assignment,Assigned,Removed,Success,Incture-Dev
+44,SAP BTP,Temp_Test_RC,Delete,2026-04-14T02:10:00Z,avinash.konatala@incture.com,BTP Admin,-,Existing Role Collection,Deleted,Success,Incture-Dev
+45,SAP BTP,Temp_Test_RC,Remove,2026-04-14T02:25:00Z,ramesh.reddy@incture.com,Security Admin,Role Assignment,Assigned,Removed,Failure,Incture-Dev
+78,SAP BTP,Audit_Viewer,Create,2026-04-14T10:40:00Z,mahesh.kumark@incture.com,System Admin,-,-,New Role Collection,Success,Incture-Test
+49,SAP BTP,Temp_Test_RC,Delete,2026-04-14T03:25:00Z,rajeev.amerneni@incture.com,System Admin,-,Existing Role Collection,Deleted,Failure,Incture-Test
+52,SAP BTP,Temp_Test_RC,Update,2026-04-14T04:10:00Z,avinash.konatala@incture.com,Developer,Priority,Low,High,Success,Incture-Dev
+65,SAP BTP,Temp_Test_RC,Update,2026-04-14T07:25:00Z,vanitha.n@incture.com,Developer,Description,Standard access,Elevated permissions,Failure,Incture-QA
+68,SAP BTP,Temp_Test_RC,Delete,2026-04-14T08:10:00Z,mahesh.kumark@incture.com,System Admin,-,Existing Role Collection,Deleted,Success,Incture-Test
+70,SAP BTP,Temp_Test_RC,Remove,2026-04-14T08:40:00Z,vanitha.n@incture.com,System Admin,Role Assignment,Assigned,Removed,Success,Incture-Prod
+96,SAP BTP,Temp_Test_RC,Update,2026-04-14T15:10:00Z,mahesh.kumark@incture.com,BTP Admin,Role Template,Display Only Access,Full Access,Success,Incture-Dev
+100,SAP BTP,Temp_Test_RC,Delete,2026-04-14T16:10:00Z,avinash.konatala@incture.com,Developer,-,Existing Role Collection,Deleted,Failure,Incture-Dev
+12,SAP BTP,Viewer_Access,Assign,2026-04-13T18:10:00Z,mahesh.kumark@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Failure,Incture-Prod
+87,SAP BTP,Support_Lead,Create,2026-04-14T12:55:00Z,mahesh.kumark@incture.com,Developer,-,-,New Role Collection,Success,Incture-QA
+18,SAP BTP,Viewer_Access,Create,2026-04-13T19:40:00Z,avinash.konatala@incture.com,Audit Specialist,-,-,New Role Collection,Success,Incture-Dev
+17,SAP BTP,Viewer_Access,Assign,2026-04-13T19:25:00Z,ramesh.reddy@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-Dev
+23,SAP BTP,Viewer_Access,Update,2026-04-13T20:55:00Z,ramesh.reddy@incture.com,System Admin,Description,Standard access,Elevated permissions,Failure,Incture-Dev
+37,SAP BTP,Viewer_Access,Remove,2026-04-14T00:25:00Z,vanitha.n@incture.com,Audit Specialist,Role Assignment,Assigned,Removed,Success,Incture-Test
+39,SAP BTP,Viewer_Access,Assign,2026-04-14T00:55:00Z,mahesh.kumark@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-QA
+50,SAP BTP,Viewer_Access,Update,2026-04-14T03:40:00Z,vanitha.n@incture.com,BTP Admin,Description,Standard access,Elevated permissions,Success,Incture-Test
+53,SAP BTP,Viewer_Access,Delete,2026-04-14T04:25:00Z,vanitha.n@incture.com,Developer,-,Existing Role Collection,Deleted,Success,Incture-Test
+58,SAP BTP,Viewer_Access,Delete,2026-04-14T05:40:00Z,mahesh.kumark@incture.com,Security Admin,-,Existing Role Collection,Deleted,Success,Incture-Dev
+83,SAP BTP,Viewer_Access,Remove,2026-04-14T11:55:00Z,mahesh.kumark@incture.com,Audit Specialist,Role Assignment,Assigned,Removed,Success,Incture-Prod
+97,SAP BTP,Finance_Admin,Create,2026-04-14T15:25:00Z,rajeev.amerneni@incture.com,Security Admin,-,-,New Role Collection,Success,Incture-Test
+86,SAP BTP,Viewer_Access,Assign,2026-04-14T12:40:00Z,avinash.konatala@incture.com,Audit Specialist,Role Assignment,Not Assigned,Assigned,Success,Incture-Test
+92,SAP BTP,Viewer_Access,Remove,2026-04-14T14:10:00Z,ramesh.reddy@incture.com,System Admin,Role Assignment,Assigned,Removed,Success,Incture-Dev
+98,SAP BTP,Viewer_Access,Delete,2026-04-14T15:40:00Z,avinash.konatala@incture.com,Security Admin,-,Existing Role Collection,Deleted,Success,Incture-QA
+

@@ -1,0 +1,27 @@
+/* Full row background color based on Status criticality */
+
+/* Success - green row background (GridTable) */
+.sapUiTableRow:has(.sapUiTableRowHighlightSuccess) .sapUiTableCell {
+    background-color: #d5f1c4 !important;
+}
+
+/* Failure - red row background (GridTable) */
+.sapUiTableRow:has(.sapUiTableRowHighlightError) .sapUiTableCell {
+    background-color: #ffd2d2 !important;
+}
+
+/* Success - green row background (ResponsiveTable fallback) */
+.sapMListTblRow:has(.sapMObjStatusSuccess) .sapMListTblCell {
+    background-color: #d5f1c4 !important;
+}
+
+/* Failure - red row background (ResponsiveTable fallback) */
+.sapMListTblRow:has(.sapMObjStatusError) .sapMListTblCell {
+    background-color: #ffd2d2 !important;
+}
+
+/* Border around table header columns */
+.sapUiTableHeaderCell {
+    border-top: 1px solid #424242 !important;
+    border-bottom: 1px solid #777777 !important;
+}

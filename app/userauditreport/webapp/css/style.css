@@ -1,0 +1,7 @@
+
+
+/* Border around table header columns */
+.sapUiTableHeaderCell {
+    border-top: 1px solid #424242 !important;
+    border-bottom: 1px solid #777777 !important;
+}

@@ -1,0 +1,21 @@
+ID,system,userId,userRole,eventType,btpService,subAccount,region,actionPerformed,timestamp
+550e8400-e29b-41d4-a716-446655440001,SAP BTP,ramesh.reddy@incture.com,App_Dev,Change Setting,XSUAA,Incture-QA,us-east-1,Modified password policy,2026-04-10 09:00:00
+550e8400-e29b-41d4-a716-446655440002,SAP BTP,mahesh.kumark@incture.com,IT_Admins,Update App,Cloud Foundry,Incture-QA,us-east-1,Increased memory limit,2026-04-10 10:30:00
+550e8400-e29b-41d4-a716-446655440003,SAP BTP,ramesh.reddy@incture.com,App_Dev,Update Security,Cloud Identity service,Incture-Test,us-east-1,Added new identity provider,2026-04-10 11:15:00
+550e8400-e29b-41d4-a716-446655440004,SAP BTP,rajeev.amerneni@incture.com,Audit_Viewers,View Audit,Audit Log,Incture-Dev,us-east-1,Downloaded audit report,2026-04-11 14:20:00
+550e8400-e29b-41d4-a716-446655440005,SAP BTP,ramesh.reddy@incture.com,App_Dev,Create Route,Cloud Foundry,Incture-Test,us-east-1,Mapped new custom domain,2026-04-11 15:45:00
+550e8400-e29b-41d4-a716-446655440006,SAP BTP,avinash.konatala@incture.com,Global_Admins,Change Setting,Destination,Incture-Prod,us-east-1,Updated proxy settings,2026-04-12 08:50:00
+550e8400-e29b-41d4-a716-446655440007,SAP BTP,rohith.ramesh@incture.com,Security_Admins,Role Update,XSUAA,Incture-QA,us-east-1,Assigned new scopes to role,2026-04-12 10:10:00
+550e8400-e29b-41d4-a716-446655440008,SAP BTP,avinash.konatala@incture.com,Global_Admins,Update Config,Connectivity,Incture-Test,us-east-1,Refreshed cloud connector token,2026-04-12 13:30:00
+550e8400-e29b-41d4-a716-446655440009,SAP BTP,mahesh.kumark@incture.com,IT_Admins,Deploy,Cloud Foundry,Incture-Prod,us-east-1,Pushed version 2.1.0,2026-04-13 09:45:00
+550e8400-e29b-41d4-a716-446655440010,SAP BTP,rajeev.amerneni@incture.com,Audit_Viewers,View Log,Audit Log,Incture-Dev,us-east-1,Searched security events,2026-04-13 11:25:00
+550e8400-e29b-41d4-a716-446655440011,SAP BTP,avinash.konatala@incture.com,Global_Admins,Change Setting,XSUAA,Incture-QA,us-east-1,Modified session timeout,2026-04-14 10:00:00
+550e8400-e29b-41d4-a716-446655440012,SAP BTP,mahesh.kumark@incture.com,IT_Admins,Update App,Cloud Foundry,Incture-Test,us-east-1,Scaled instance count to 3,2026-04-14 11:40:00
+550e8400-e29b-41d4-a716-446655440013,SAP BTP,ramesh.reddy@incture.com,App_Dev,Update Security,Cloud Identity service,Incture-Prod,us-east-1,Enabled MFA for admin group,2026-04-14 14:15:00
+550e8400-e29b-41d4-a716-446655440014,SAP BTP,rajeev.amerneni@incture.com,Audit_Viewers,View Audit,Audit Log,Incture-Dev,us-east-1,Exported user list,2026-04-15 09:10:00
+550e8400-e29b-41d4-a716-446655440015,SAP BTP,ramesh.reddy@incture.com,App_Dev,Create Service,Document Management service,Incture-QA,us-east-1,Provisioned AWS S3 bucket,2026-04-15 13:55:00
+550e8400-e29b-41d4-a716-446655440016,SAP BTP,avinash.konatala@incture.com,Global_Admins,Change Setting,Destination,Incture-Test,us-east-1,Deleted obsolete destination,2026-04-16 08:20:00
+550e8400-e29b-41d4-a716-446655440017,SAP BTP,rohith.ramesh@incture.com,Security_Admins,Role Update,XSUAA,Incture-Prod,us-east-1,Removed unused role template,2026-04-16 11:05:00
+550e8400-e29b-41d4-a716-446655440018,SAP BTP,avinash.konatala@incture.com,Global_Admins,Update Config,Connectivity,Incture-QA,us-east-1,Added backend system mapping,2026-04-16 15:30:00
+550e8400-e29b-41d4-a716-446655440019,SAP BTP,mahesh.kumark@incture.com,IT_Admins,Deploy,Cloud Foundry,Incture-Test,us-east-1,Reverted to version 2.0.8,2026-04-17 10:45:00
+550e8400-e29b-41d4-a716-446655440020,SAP BTP,rajeev.amerneni@incture.com,Audit_Viewers,View Log,Audit Log,Incture-Dev,us-east-1,Monitored traffic spikes,2026-04-17 14:25:00

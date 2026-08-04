@@ -1,0 +1,26 @@
+
+
+/* Border around table header columns */
+.sapUiTableHeaderCell {
+    border-top: 1px solid #424242 !important;
+    border-bottom: 1px solid #777777 !important;
+}
+
+/* App_Dev role - yellowish row background */
+.sapUiTableRow:has(.sapMObjStatusWarning) .sapUiTableCell,
+.sapMListTblRow:has(.sapMObjStatusWarning) .sapMListTblCell {
+    background-color: #fad4be !important;
+}
+
+/* Reset only the userRole column text to normal (no colored text) */
+.sapUiTableRow > .sapUiTableCell:nth-child(2) .sapMObjStatusWarning .sapMObjStatusText,
+.sapMListTblRow > .sapMListTblCell:nth-child(2) .sapMObjStatusWarning .sapMObjStatusText {
+    color: inherit !important;
+}
+
+
+/* Border around table header columns */
+.sapUiTableHeaderCell {
+    border-top: 1px solid #424242 !important;
+    border-bottom: 1px solid #777777 !important;
+}

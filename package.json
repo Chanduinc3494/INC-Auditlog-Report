@@ -1,0 +1,49 @@
+{
+  "name": "audit-logging-and-reporting",
+  "version": "1.0.0",
+  "dependencies": {
+    "@cap-js/hana": "^2.7.0",
+    "@sap/cds": "^9.8.5",
+    "@sap/xssec": "^4.13.0",
+    "axios": "^1.19.0"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2.2.0",
+    "@sap/cds-dk": "^9.8.4",
+    "cds-plugin-ui5": "^0.13.6",
+    "mbt": "^1.2.45",
+    "rimraf": "^5.0.10"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-userauditreport": "cds watch --open userauditreport/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "undeploy": "cf undeploy auditLoggingAndReporting --delete-services --delete-service-keys --delete-service-brokers",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
+    "watch-rolesauditreport": "cds watch --open rolesauditreport/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-configurationreport": "cds watch --open configurationreport/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-servicesauditreport": "cds watch --open servicesauditreport/index.html?sap-ui-xx-viewCache=false --livereload false"
+  },
+  "private": true,
+ "cds": {
+  "requires": {
+    "[production]": {
+      "auth": "xsuaa",
+      "db": "hana"
+    },
+    "[hybrid]": {
+      "auth": "mocked",
+      "db": "hana"
+    }
+  }
+},
+  "workspaces": [
+    "app/*"
+  ],
+  "sapux": [
+    "app/userauditreport",
+    "app/rolesauditreport",
+    "app/configurationreport",
+    "app/servicesauditreport"
+  ]
+}
