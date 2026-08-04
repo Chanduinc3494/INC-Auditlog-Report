@@ -1,0 +1,97 @@
+CREATE COLUMN TABLE USER_AUDIT_REPORT (
+    ID NVARCHAR(36) NOT NULL PRIMARY KEY,
+
+    "SYSTEM" NVARCHAR(50),
+    "TIMESTAMP" TIMESTAMP,
+
+    EVENT_TYPE NVARCHAR(50),
+    EVENT NVARCHAR(100),
+
+    USER_ID NVARCHAR(100),
+    USER_NAME NVARCHAR(100),
+    USER_TYPE NVARCHAR(50),
+
+    ROLE_COLLECTION NVARCHAR(100),
+
+    FIELD_CHANGED NVARCHAR(100),
+    OLD_VALUE NVARCHAR(255),
+    NEW_VALUE NVARCHAR(255),
+
+    PERFORMED_BY NVARCHAR(100),
+    USER_ROLE NVARCHAR(100),
+
+    STATUS NVARCHAR(20),
+
+    SUBACCOUNT NVARCHAR(100)
+);
+/***************************************************************************************************************/
+CREATE COLUMN TABLE ROLE_AUDIT_REPORT (
+    ID NVARCHAR(36) NOT NULL PRIMARY KEY,
+
+    "SYSTEM" NVARCHAR(50),
+
+    ROLE_COLLECTION NVARCHAR(100),
+
+    EVENT NVARCHAR(100),
+
+    "TIMESTAMP" TIMESTAMP,
+
+    CHANGED_BY_USER_ID NVARCHAR(100),
+
+    USER_ROLE NVARCHAR(100),
+
+    FIELD_CHANGED NVARCHAR(100),
+
+    OLD_VALUE NVARCHAR(255),
+
+    NEW_VALUE NVARCHAR(255),
+
+    STATUS NVARCHAR(20),
+
+    SUBACCOUNT_NAME NVARCHAR(100)
+);
+/********************************************************************************************************************/
+CREATE COLUMN TABLE CONFIGURATION_REPORT (
+    ID NVARCHAR(36) NOT NULL PRIMARY KEY,
+
+    "SYSTEM" NVARCHAR(50),
+
+    USER_ID NVARCHAR(100),
+
+    USER_ROLE NVARCHAR(50),
+
+    EVENT_TYPE NVARCHAR(50),
+
+    BTP_SERVICE NVARCHAR(100),
+
+    SUB_ACCOUNT NVARCHAR(100),
+
+    REGION NVARCHAR(100),
+
+    ACTION_PERFORMED NVARCHAR(255),
+
+    "TIMESTAMP" TIMESTAMP
+);
+/*********************************************************************************************************************/
+CREATE COLUMN TABLE SERVICE_AUDIT_REPORT (
+    ID NVARCHAR(36) NOT NULL PRIMARY KEY,
+
+    "SYSTEM" NVARCHAR(50),
+
+    SUBACCOUNT NVARCHAR(100),
+
+    SERVICE_NAME NVARCHAR(100),
+
+    PLAN_NAME NVARCHAR(100),
+
+    STATUS NVARCHAR(50),
+
+    CREATED_ON TIMESTAMP,
+
+    CREATED_BY NVARCHAR(100),
+
+    CHANGED_ON TIMESTAMP,
+
+    CHANGED_BY NVARCHAR(100)
+);
+/**********************************************************************************************************************/
