@@ -1,0 +1,82 @@
+##
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/syncServiceLogs
+Content-Type: application/json
+
+{}
+
+### fetch the service auditlogs
+GET http://localhost:4004/odata/v4/audit-logging-and-reporting/ServiceAuditReport
+
+###
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/clearEntitlements
+Content-Type: application/json
+
+{}
+
+### create the service keys for subaccount
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPConnection
+Content-Type: application/json
+
+{
+    "subaccountId": "396100c1-7413-4eb4-b435-2c85c2772979",
+    "subaccountName": "510027cetrial",
+    "serviceType": "SERVICE_MANAGER",
+    "tokenUrl": "https://510027cetrial.authentication.us10.hana.ondemand.com",
+    "apiBaseUrl": "https://service-manager.cfapps.us10.hana.ondemand.com",
+    "clientId": "sb-f942a6e2-b99c-4044-9530-0467af440312!b687901|service-manager!b1476",
+    "clientSecret": "72f74ae8-c835-441d-aa38-cfc241b75022$KBQyFoveGwu2X5ydKDVvtm1R21wqhkFM30HXywgGlN0=",
+    "region": "us10",
+    "active": true
+}
+
+### fetch all the subaccount client ids and service key
+GET  http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPConnection
+
+### user audit
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus
+Content-Type: application/json
+
+{
+    "reportName": "USER_AUDIT",
+    "lastSyncStatus": "SUCCESS",
+    "isRunning": false,
+    "recordsSynced": 0,
+    "message": "Not synchronized yet"
+}
+### role audit
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus
+Content-Type: application/json
+
+{
+    "reportName": "ROLE_AUDIT",
+    "lastSyncStatus": "SUCCESS",
+    "isRunning": false,
+    "recordsSynced": 0,
+    "message": "Not synchronized yet"
+}
+
+### configuration report
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus
+Content-Type: application/json
+
+{
+    "reportName": "CONFIGURATION",
+    "lastSyncStatus": "SUCCESS",
+    "isRunning": false,
+    "recordsSynced": 0,
+    "message": "Not synchronized yet"
+}
+### service audit report
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus
+Content-Type: application/json
+
+{
+    "reportName": "SERVICE_AUDIT",
+    "lastSyncStatus": "SUCCESS",
+    "isRunning": false,
+    "recordsSynced": 0,
+    "message": "Not synchronized yet"
+}
+
+###
+GET http://localhost:4004/odata/v4/audit-logging-and-reporting/getServiceAuditStatus()

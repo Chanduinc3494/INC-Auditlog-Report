@@ -13,11 +13,14 @@ service auditLoggingAndReportingService
         *,
         virtual roleCriticality : Integer
     };
+    entity BTPConnection as projection on db.BTPConnection;
+    entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
     entity ServiceAuditReports as projection on db.ServiceAuditReport;
     //for sync btn
-    action syncAuditLogs() returns String;
-    action syncEntitlements() returns String;
+    action syncServiceLogs() returns String;
+    action clearEntitlements() returns String;
+      function getServiceAuditStatus() returns ReportSyncStatus;
 
 
     @readonly

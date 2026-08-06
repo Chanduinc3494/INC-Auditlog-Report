@@ -115,12 +115,40 @@
           "options": {
             "settings": {
               "contextPath": "/ServiceAuditReports",
-              "initialLoad": true,
               "variantManagement": "None",
               "controlConfiguration": {
                 "@com.sap.vocabularies.UI.v1.LineItem": {
                   "tableSettings": {
                     "type": "GridTable"
+                  }
+                }
+              },
+              "inlineEdit": {
+                "enabledFields": [],
+                "disabledFields": []
+              },
+              "defaultTemplateAnnotationPath": "com.sap.vocabularies.UI.v1.SelectionPresentationVariant#tableView",
+              "initialLoad": "Enabled",
+              "content": {
+                "header": {
+                  "actions": {
+                    "lastSync": {
+                      "press": "servicesauditreport.ext.controller.HeaderActions.onLastSyncPress",
+                      "visible": true,
+                      "enabled": true,
+                      "text": "Last Sync Info"
+                    },
+                    "SyncBtn": {
+                      "press": "servicesauditreport.ext.controller.SyncBtn.SyncServiceLogs",
+                      "visible": true,
+                      "enabled": true,
+                      "text": "Sync Logs",
+                      "icon":"sap-icon://synchronize",
+                      "position": {
+                        "anchor": "lastSync",
+                        "placement": "After"
+                      }
+                    }
                   }
                 }
               }
