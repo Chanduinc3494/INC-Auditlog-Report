@@ -19,8 +19,10 @@ service auditLoggingAndReportingService
     entity ServiceAuditReports as projection on db.ServiceAuditReport;
     //for sync btn
     action syncServiceLogs() returns String;
+    action syncRoleLogs() returns String;
     action clearEntitlements() returns String;
-      function getServiceAuditStatus() returns ReportSyncStatus;
+    function getServiceAuditStatus() returns ReportSyncStatus;
+    
 
 
     @readonly

@@ -29,6 +29,22 @@ Content-Type: application/json
     "active": true
 }
 
+### create the service keys for audit logs service
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPConnection
+Content-Type: application/json
+
+{
+    "subaccountId": "396100c1-7413-4eb4-b435-2c85c2772979",
+    "subaccountName": "510027cetrial",
+    "serviceType": "AUDIT_LOG",
+    "tokenUrl": "https://510027cetrial.authentication.us10.hana.ondemand.com",
+    "apiBaseUrl": "https://auditlog-management.cfapps.us10.hana.ondemand.com",
+    "clientId": "sb-5e5d6fff-b289-414d-a6af-21eac41779ca!b687901|auditlog-management!b1187",
+    "clientSecret": "906c4175-8e6b-432a-b53f-b2bc44a8eda9$v91K7NutiJ-L8zyG-0zg_bYGkIXGdk5ZlJIH-doK8uk=",
+    "region": "us10",
+    "active": true
+}
+
 ### fetch all the subaccount client ids and service key
 GET  http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPConnection
 
@@ -78,5 +94,15 @@ Content-Type: application/json
     "message": "Not synchronized yet"
 }
 
+### fetch report status
+GET http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus
+### action to sync role audit logs
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/syncRoleLogs
+Content-Type: application/json
+
+{}
+
 ###
-GET http://localhost:4004/odata/v4/audit-logging-and-reporting/getServiceAuditStatus()
+GET http://localhost:4004/odata/v4/audit-logging-and-reporting/RoleAuditReports
+### deleting role record from status table
+DELETE  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('03fc754c-f3d4-455a-acce-efe7f79dd1bf')
