@@ -7,6 +7,7 @@ const authServiceManager = require("../lib/authServiceMgr");
 const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("../lib/serviceAuditfns")
 const { SELECT } = require("@sap/cds/lib/ql/cds-ql");
 module.exports = cds.service.impl(async function () {
+<<<<<<< Updated upstream
     const db = await cds.connect.to("db");
     const {
         UserAuditReport,
@@ -28,6 +29,9 @@ module.exports = cds.service.impl(async function () {
     } catch (err) {
         console.error("Startup sync failed:", err);
     }
+=======
+     const db = await cds.connect.to("db");
+>>>>>>> Stashed changes
     this.after("READ", "RoleAuditReports", (results) => {
         if (!results) return;
         const items = Array.isArray(results) ? results : [results];
@@ -54,6 +58,7 @@ module.exports = cds.service.impl(async function () {
         }
     });
 
+<<<<<<< Updated upstream
 
     // service logs
     this.on("syncServiceLogs", async (req) => {
@@ -244,4 +249,19 @@ module.exports = cds.service.impl(async function () {
     //     return "SUCCESSS";
     // })
 
+=======
+    this.after("READ", "ConfigurationReports", (results) => {
+        if (!results) return;
+
+        const items = Array.isArray(results) ? results : [results];
+
+        for (const item of items) {
+            if (item.userRole === "App_Dev") {
+                item.roleCriticality = 2;
+            } else {
+                item.roleCriticality = 0;
+            }
+        }
+    });
+>>>>>>> Stashed changes
 });

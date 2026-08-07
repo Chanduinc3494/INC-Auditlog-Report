@@ -17,10 +17,15 @@ service auditLoggingAndReportingService
     entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
     entity ServiceAuditReports as projection on db.ServiceAuditReport;
+<<<<<<< Updated upstream
     //for sync btn
     action syncServiceLogs() returns String;
     action clearEntitlements() returns String;
       function getServiceAuditStatus() returns ReportSyncStatus;
+=======
+    entity ConfigurationReports as projection on db.ConfigurationReport;
+
+>>>>>>> Stashed changes
 
 
     @readonly
