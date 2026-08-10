@@ -90,7 +90,10 @@ service auditLoggingAndReportingService
 
     @readonly
     entity BTPRegionVH as select from db.BTPConnection {key region} group by region;
-    entity BTPServiceTypeVH as select from db.BTPConnection {key serviceType} group by serviceType;
+    // entity BTPServiceTypeVH as select from db.BTPConnection {key serviceType} group by serviceType;
     entity BTPSubaccountVH as select from db.BTPConnection { key subaccountName } group by subaccountName;
+    @readonly
+    entity BTPServiceTypeVH { key code : String(30); }
+
     
 }

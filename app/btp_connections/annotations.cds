@@ -86,8 +86,8 @@ annotate service.BTPConnection with @(
     ],
     UI.SelectionFields : [
         subaccountName,
-        serviceType,
         region,
+        serviceType,
     ],
     UI.HeaderInfo : {
         TypeName : '',
@@ -150,14 +150,14 @@ annotate service.BTPConnection with {
             Parameters : [
                 {
                     $Type : 'Common.ValueListParameterInOut',
-                    LocalDataProperty : serviceType,
-                    ValueListProperty : 'serviceType',
+                    LocalDataProperty : BTP,
+                    ValueListProperty : 'code',
                 },
             ],
             Label : 'Service Type',
         },
         Common.ValueListWithFixedValues : true,
-    )
+        )
 };
 
 annotate service.BTPConnection with {

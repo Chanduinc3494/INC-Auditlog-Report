@@ -67,6 +67,7 @@ type ServiceType : String enum {
     ACCOUNTS;
     SAAS_MANAGER;
 };
+
 entity BTPConnection : cuid, managed {
 
     subaccountId    : String(100);

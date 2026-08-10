@@ -3,196 +3,201 @@ ID: auditLoggingAndReporting
 description: A simple CAP project.
 version: 1.0.0
 modules:
-- name: auditLoggingAndReporting-srv
-  type: nodejs
-  path: gen/srv
-  requires:
-  - name: auditLoggingAndReporting-auth
-  - name: auditLoggingAndReporting-db
-  provides:
-  - name: srv-api
-    properties:
-      srv-url: ${default-url}
-  parameters:
-    buildpack: nodejs_buildpack
-    instances: 1
-  build-parameters:
-    builder: npm-ci
-- name: auditLoggingAndReporting-db-deployer
-  type: hdb
-  path: gen/db
-  requires:
-  - name: auditLoggingAndReporting-db
-  parameters:
-    buildpack: nodejs_buildpack
-- name: auditLoggingAndReporting-destination-content
-  type: com.sap.application.content
-  requires:
-  - name: auditLoggingAndReporting-destination-service
-    parameters:
-      content-target: true
-  - name: auditLoggingAndReporting_html_repo_host
-    parameters:
-      service-key:
-        name: auditLoggingAndReporting_html_repo_host-key
-  - name: auditLoggingAndReporting-auth
-    parameters:
-      service-key:
-        name: auditLoggingAndReporting-auth-key
-  parameters:
-    content:
-      instance:
-        destinations:
-        - Name: auditreporting_app_auditLoggingAndReporting_html_repo_host
-          ServiceInstanceName: auditLoggingAndReporting-html5-app-host-service
-          ServiceKeyName: auditLoggingAndReporting_html_repo_host-key
-          sap.cloud.service: auditreporting.app
-        - Authentication: OAuth2UserTokenExchange
-          Name: auditreporting_app_auditLoggingAndReporting_auth
-          ServiceInstanceName: auditLoggingAndReporting-auth
-          ServiceKeyName: auditLoggingAndReporting-auth-key
-          sap.cloud.service: auditreporting.app
-        existing_destinations_policy: update
-  build-parameters:
-    no-source: true
-- name: auditLoggingAndReporting-app-content
-  type: com.sap.application.content
-  path: .
-  requires:
-  - name: auditLoggingAndReporting_html_repo_host
-    parameters:
-      content-target: true
-  build-parameters:
-    build-result: resources
+  - name: auditLoggingAndReporting-srv
+    type: nodejs
+    path: gen/srv
     requires:
-    - artifacts:
-      - userauditreport.zip
-      name: userauditreport
-      target-path: resources/
-    - artifacts:
-      - rolesauditreport.zip
-      name: rolesauditreport
-      target-path: resources/
-    - artifacts:
-      - configurationreport.zip
-      name: configurationreport
-      target-path: resources/
-    - artifacts:
-      - servicesauditreport.zip
-      name: servicesauditreport
-      target-path: resources/
-    - artifacts:
-      - btpconnections.zip
-      name: btpconnections
-      target-path: resources/
-- name: userauditreport
-  type: html5
-  path: app/userauditreport
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
-- name: rolesauditreport
-  type: html5
-  path: app/rolesauditreport
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
-- name: configurationreport
-  type: html5
-  path: app/configurationreport
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
-- name: servicesauditreport
-  type: html5
-  path: app/servicesauditreport
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
-- name: btpconnections
-  type: html5
-  path: app/btp_connections
-  build-parameters:
-    build-result: dist
-    builder: custom
-    commands:
-    - npm install
-    - npm run build:cf
-    supported-platforms: []
-resources:
-- name: auditLoggingAndReporting-auth
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      oauth2-configuration:
-        credential-types:
-        - binding-secret
-        - x509
-      tenant-mode: dedicated
-      xsappname: auditLoggingAndReporting-${org}-${space}
-    path: ./xs-security.json
-    service: xsuaa
-    service-plan: application
-- name: auditLoggingAndReporting-db
-  type: com.sap.xs.hdi-container
-  parameters:
-    service: hana
-    service-plan: hdi-shared
-- name: auditLoggingAndReporting-destination-service
-  type: org.cloudfoundry.managed-service
-  parameters:
-    config:
-      HTML5Runtime_enabled: true
-      init_data:
+      - name: auditLoggingAndReporting-auth
+      - name: auditLoggingAndReporting-db
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: ${default-url}
+    parameters:
+      buildpack: nodejs_buildpack
+      instances: 1
+    build-parameters:
+      builder: npm-ci
+  - name: auditLoggingAndReporting-db-deployer
+    type: hdb
+    path: gen/db
+    requires:
+      - name: auditLoggingAndReporting-db
+    parameters:
+      buildpack: nodejs_buildpack
+  - name: auditLoggingAndReporting-destination-content
+    type: com.sap.application.content
+    requires:
+      - name: auditLoggingAndReporting-destination-service
+        parameters:
+          content-target: true
+      - name: auditLoggingAndReporting_html_repo_host
+        parameters:
+          service-key:
+            name: auditLoggingAndReporting_html_repo_host-key
+      - name: auditLoggingAndReporting-auth
+        parameters:
+          service-key:
+            name: auditLoggingAndReporting-auth-key
+    parameters:
+      content:
         instance:
           destinations:
-          - Authentication: NoAuthentication
-            Name: ui5
-            ProxyType: Internet
-            Type: HTTP
-            URL: https://ui5.sap.com
-          - Authentication: NoAuthentication
-            HTML5.DynamicDestination: true
-            HTML5.ForwardAuthToken: true
-            Name: srv-api
-            ProxyType: Internet
-            Type: HTTP
-            URL: ~{srv-api/srv-url}
+            - Name: auditreporting_app_auditLoggingAndReporting_html_repo_host
+              ServiceInstanceName: auditLoggingAndReporting-html5-app-host-service
+              ServiceKeyName: auditLoggingAndReporting_html_repo_host-key
+              sap.cloud.service: auditreporting.app
+            - Authentication: OAuth2UserTokenExchange
+              Name: auditreporting_app_auditLoggingAndReporting_auth
+              ServiceInstanceName: auditLoggingAndReporting-auth
+              ServiceKeyName: auditLoggingAndReporting-auth-key
+              sap.cloud.service: auditreporting.app
           existing_destinations_policy: update
-      version: 1.0.0
-    service: destination
-    service-name: auditLoggingAndReporting-destination-service
-    service-plan: lite
-  requires:
-  - name: srv-api
-- name: auditLoggingAndReporting_html_repo_host
-  type: org.cloudfoundry.managed-service
-  parameters:
-    service: html5-apps-repo
-    service-name: auditLoggingAndReporting-html5-app-host-service
-    service-plan: app-host
+    build-parameters:
+      no-source: true
+  - name: auditLoggingAndReporting-app-content
+    type: com.sap.application.content
+    path: .
+    requires:
+      - name: auditLoggingAndReporting_html_repo_host
+        parameters:
+          content-target: true
+    build-parameters:
+      build-result: resources
+      requires:
+        - artifacts:
+            - userauditreport.zip
+          name: userauditreport
+          target-path: resources/
+        - artifacts:
+            - rolesauditreport.zip
+          name: rolesauditreport
+          target-path: resources/
+        - artifacts:
+            - configurationreport.zip
+          name: configurationreport
+          target-path: resources/
+        - artifacts:
+            - servicesauditreport.zip
+          name: servicesauditreport
+          target-path: resources/
+        - artifacts:
+            - btpconnections.zip
+          name: btpconnections
+          target-path: resources/
+  - name: userauditreport
+    type: html5
+    path: app/userauditreport
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms:
+        []
+  - name: rolesauditreport
+    type: html5
+    path: app/rolesauditreport
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms:
+        []
+  - name: configurationreport
+    type: html5
+    path: app/configurationreport
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms:
+        []
+  - name: servicesauditreport
+    type: html5
+    path: app/servicesauditreport
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms:
+        []
+  - name: btpconnections
+    type: html5
+    path: app/btp_connections
+    build-parameters:
+      build-result: dist
+      builder: custom
+      commands:
+        - npm install
+        - npm run build:cf
+      supported-platforms:
+        []
+resources:
+  - name: auditLoggingAndReporting-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        oauth2-configuration:
+          credential-types:
+            - binding-secret
+            - x509
+        tenant-mode: dedicated
+        xsappname: auditLoggingAndReporting-${org}-${space}
+      path: ./xs-security.json
+      service: xsuaa
+      service-plan: application
+  - name: auditLoggingAndReporting-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+  - name: auditLoggingAndReporting-destination-service
+    type: org.cloudfoundry.managed-service
+    parameters:
+      config:
+        HTML5Runtime_enabled: true
+        init_data:
+          instance:
+            destinations:
+              - Authentication: NoAuthentication
+                Name: ui5
+                ProxyType: Internet
+                Type: HTTP
+                URL: https://ui5.sap.com
+              - Authentication: NoAuthentication
+                HTML5.DynamicDestination: true
+                HTML5.ForwardAuthToken: true
+                Name: srv-api
+                ProxyType: Internet
+                Type: HTTP
+                URL: ~{srv-api/srv-url}
+            existing_destinations_policy: update
+        version: 1.0.0
+      service: destination
+      service-name: auditLoggingAndReporting-destination-service
+      service-plan: lite
+    requires:
+      - name: srv-api
+  - name: auditLoggingAndReporting_html_repo_host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-name: auditLoggingAndReporting-html5-app-host-service
+      service-plan: app-host
 parameters:
   deploy_mode: html5-repo
   enable-parallel-deployments: true
 build-parameters:
   before-all:
-  - builder: custom
-    commands:
-    - npm ci
-    - npx cds build --production
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
