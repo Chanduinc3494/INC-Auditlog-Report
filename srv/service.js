@@ -532,6 +532,24 @@ module.exports = cds.service.impl(async function () {
             });
 
     });
+     this.on("getRoleAudiStatus", async () => {
+
+        return await SELECT.one
+            .from(ReportSyncStatus)
+            .where({
+                reportName: "ROLE_AUDIT"
+            });
+
+    });
+     this.on("getConfigurationAuditStatus", async () => {
+
+        return await SELECT.one
+            .from(ReportSyncStatus)
+            .where({
+                reportName: "CONFIGURATION"
+            });
+
+    });
     // this.on("syncAuditLogs",async ()=>{
     //     const logs = await audit.fetchAuditLogs();
     //     await db.insert(UserAuditReport).enteries(logs);

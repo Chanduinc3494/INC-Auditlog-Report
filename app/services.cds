@@ -6,3 +6,5 @@ using from './rolesauditreport/annotations';
 using from './configurationreport/annotations';
 
 using from './servicesauditreport/annotations';
+
+using from './btp_connections/annotations';

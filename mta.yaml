@@ -81,6 +81,10 @@ modules:
       - servicesauditreport.zip
       name: servicesauditreport
       target-path: resources/
+    - artifacts:
+      - btpconnections.zip
+      name: btpconnections
+      target-path: resources/
 - name: userauditreport
   type: html5
   path: app/userauditreport
@@ -114,6 +118,16 @@ modules:
 - name: servicesauditreport
   type: html5
   path: app/servicesauditreport
+  build-parameters:
+    build-result: dist
+    builder: custom
+    commands:
+    - npm install
+    - npm run build:cf
+    supported-platforms: []
+- name: btpconnections
+  type: html5
+  path: app/btp_connections
   build-parameters:
     build-result: dist
     builder: custom

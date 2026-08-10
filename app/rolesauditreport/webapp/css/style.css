@@ -25,3 +25,13 @@
     border-top: 1px solid #424242 !important;
     border-bottom: 1px solid #777777 !important;
 }
+button[id$="::SyncBtn"] .sapMBtnInner {
+    background-color: #0A6ED1 !important;
+    border-color: #0A6ED1 !important;
+    color: white !important;
+}
+button[id$="::SyncBtn"] .sapMBtnInner:hover {
+    background-color: #0854A0 !important;
+    border-color: #0854A0 !important;
+    color: white !important;
+}

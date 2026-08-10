@@ -13,6 +13,7 @@ service auditLoggingAndReportingService
         *,
         virtual roleCriticality : Integer
     };
+    @odata.draft.enabled
     entity BTPConnection as projection on db.BTPConnection;
     entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
@@ -25,6 +26,9 @@ service auditLoggingAndReportingService
     action syncRoleLogs() returns String;
     action clearEntitlements() returns String;
     function getServiceAuditStatus() returns ReportSyncStatus;
+    function getRoleAudiStatus() returns ReportSyncStatus;
+    function getConfigurationAuditStatus() returns ReportSyncStatus;
+
     
 
 
@@ -83,4 +87,10 @@ service auditLoggingAndReportingService
     entity ServiceCreatedByVH as select from db.ServiceAuditReport { key createdBy } group by createdBy;
     @readonly
     entity ServiceChangedByVH as select from db.ServiceAuditReport { key changedBy } group by changedBy;
+
+    @readonly
+    entity BTPRegionVH as select from db.BTPConnection {key region} group by region;
+    entity BTPServiceTypeVH as select from db.BTPConnection {key serviceType} group by serviceType;
+    entity BTPSubaccountVH as select from db.BTPConnection { key subaccountName } group by subaccountName;
+    
 }
