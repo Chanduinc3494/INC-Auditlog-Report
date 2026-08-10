@@ -49,6 +49,8 @@ entity ConfigurationReport : cuid {
 entity ServiceAuditReport : cuid {
     system        : String(50);  // System
     instance      : String(80);
+    subaccountId    : String(100);
+    serviceInstanceId : String(100);
     subaccount    : String(100); // Subaccount
     serviceName   : String(100); // Service Name
     planName      : String(100); // Plan Name
@@ -96,17 +98,11 @@ entity ReportSyncStatus : cuid, managed {
     reportName     : ReportType;
 
     lastSyncAt     : Timestamp;
-
     lastSyncStatus : String(20);
     // SUCCESS
     // FAILED
     // RUNNING
-
     lastSyncBy     : String(100);
-
-    recordsSynced  : Integer;
-
     message        : String(500);
-
     isRunning      : Boolean default false;
 }

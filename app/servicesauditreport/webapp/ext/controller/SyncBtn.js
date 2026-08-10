@@ -1,18 +1,18 @@
 sap.ui.define([
-     "sap/m/MessageToast",
+    "sap/m/MessageToast",
     "sap/m/MessageBox"
-], function(MessageToast) {
-    'use strict';
+], function (MessageToast, MessageBox) {
+    "use strict";
 
     return {
-        /**
-         * Generated event handler.
-         *
-         * @param oContext the context of the page on which the event was fired. `undefined` for list report page.
-         * @param aSelectedContexts the selected contexts of the table rows.
-         */
-        SyncServiceLogs: async function(oContext, aSelectedContexts) {
+
+        SyncServiceLogs: async function (oContext, aSelectedContexts) {
+
             try {
+
+                // --------------------------------------------------
+                // 1. Call CAP action
+                // --------------------------------------------------
 
                 const response = await fetch(
                     "/odata/v4/audit-logging-and-reporting/syncServiceLogs",
@@ -26,20 +26,56 @@ sap.ui.define([
                 );
 
                 if (!response.ok) {
-                    throw new Error("Synchronization failed.");
+                    const errorText = await response.text();
+                    throw new Error(
+                        errorText || "Synchronization failed."
+                    );
                 }
+
+                // --------------------------------------------------
+                // 2. Read response
+                // --------------------------------------------------
 
                 const result = await response.json();
 
-                MessageToast.show(result.value);
+                MessageToast.show(
+                    result.value ||
+                    "Synchronization completed successfully."
+                );
+
+                // --------------------------------------------------
+                // 3. Refresh Fiori Elements List Report
+                // --------------------------------------------------
+
+                const oPage = sap.ui.getCore().byId(
+                    "servicesauditreport::ServiceAuditReportsList"
+                );
+
+                if (!oPage) {
+                    console.error(
+                        "Service Audit List Report page not found."
+                    );
+                    return;
+                }
+
+                const oModel = oPage.getModel();
+
+                if (oModel) {
+                    oModel.refresh("$auto");
+                }
 
             } catch (err) {
 
-                MessageBox.error(err.message);
+                console.error(
+                    "Synchronization error:",
+                    err
+                );
 
+                MessageBox.error(
+                    err.message ||
+                    "Synchronization failed."
+                );
             }
-
-        
         }
     };
 });

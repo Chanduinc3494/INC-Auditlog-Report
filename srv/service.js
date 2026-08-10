@@ -5,7 +5,11 @@ const authCsm = require("../lib/authCms");
 const { fetchEntitlementsLogs, fetchAccountDirectory } = require("../lib/cloudservice");
 const authServiceManager = require("../lib/authServiceMgr");
 const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("../lib/serviceAuditfns")
-const { SELECT } = require("@sap/cds/lib/ql/cds-ql");
+const { SELECT,
+    INSERT,
+    UPDATE,
+    DELETE
+} = require("@sap/cds/lib/ql/cds-ql");
 const { fetchRoleLogs } = require("../lib/roleAuditFunction");
 const { formatAuditTimestamp } = require("../lib/utils")
 module.exports = cds.service.impl(async function () {
@@ -48,7 +52,6 @@ module.exports = cds.service.impl(async function () {
     // service logs
     this.on("syncServiceLogs", async (req) => {
 
-        let totalRecords = 0;
 
         await UPDATE(ReportSyncStatus)
             .set({
@@ -121,8 +124,10 @@ module.exports = cds.service.impl(async function () {
                     planMap.set(plan.id, plan);
                 }
 
-                for (const instance of instances.items) {
+                const currentInstanceIds = new Set();
 
+                for (const instance of instances.items) {
+                    currentInstanceIds.add(instance.id);
                     const plan = planMap.get(instance.service_plan_id);
 
                     if (!plan) continue;
@@ -135,17 +140,16 @@ module.exports = cds.service.impl(async function () {
                     const existing = await SELECT.one
                         .from(ServiceAuditReport)
                         .where({
-                            subaccount: instance.context.subdomain,
-                            serviceName: offering.name,
-                            planName: plan.name,
-                            instance: instance.name,
+                            subaccountId: connection.subaccountId,
+                            serviceInstanceId: instance.id
                         });
 
                     const entry = {
 
                         system: "SAP BTP",
                         instance: instance.name,
-
+                        serviceInstanceId: instance.id,
+                        subaccountId: connection.subaccountId,
                         subaccount: instance.context.subdomain,
 
                         serviceName: offering.name,
@@ -168,6 +172,7 @@ module.exports = cds.service.impl(async function () {
                             .into(ServiceAuditReport)
                             .entries(entry);
 
+
                     } else {
 
                         await UPDATE(ServiceAuditReport)
@@ -176,6 +181,25 @@ module.exports = cds.service.impl(async function () {
                                 ID: existing.ID
                             });
 
+
+                    }
+                }
+                const existingRecords = await SELECT.from(ServiceAuditReport).columns("ID", "serviceInstanceId").where({
+                    subaccountId: connection.subaccountId
+                })
+              
+                for (const record of existingRecords) {
+                    if (
+                        !currentInstanceIds.has(
+                            record.serviceInstanceId
+                        )
+                    ) {
+
+                        await DELETE
+                            .from(ServiceAuditReport)
+                            .where({
+                                ID: record.ID
+                            });
                     }
                 }
             }
@@ -184,7 +208,6 @@ module.exports = cds.service.impl(async function () {
                 .set({
                     lastSyncAt: new Date(),
                     lastSyncStatus: "SUCCESS",
-                    recordsSynced: totalRecords,
                     isRunning: false,
                     message: "Synchronization completed"
                 })
@@ -236,9 +259,6 @@ module.exports = cds.service.impl(async function () {
                     reportName: "ROLE_AUDIT"
                 });
         }
-
-        let totalRecords = 0;
-
         try {
             const connections = await SELECT
                 .from(BTPConnection)
@@ -452,8 +472,7 @@ module.exports = cds.service.impl(async function () {
                                 subaccountName: connection.subaccountName
 
                             });
-
-                            totalRecords++;
+                           
                         }
 
                         continue;
@@ -461,11 +480,10 @@ module.exports = cds.service.impl(async function () {
 
                     if (entry) {
                         entries.push(entry);
-                        totalRecords++;
                     }
                 }
             }
-            
+
             if (entries.length > 0) {
                 await INSERT.into(RoleAuditReport).entries(entries);
             }
@@ -474,7 +492,6 @@ module.exports = cds.service.impl(async function () {
                 .set({
                     lastSyncAt: timeTo,
                     lastSyncStatus: "SUCCESS",
-                    recordsSynced: totalRecords,
                     isRunning: false,
                     message: "Synchronization completed"
                 })
@@ -503,7 +520,7 @@ module.exports = cds.service.impl(async function () {
 
 
     this.on("clearEntitlements", async () => {
-        await DELETE.from(RoleAuditReport);
+        await DELETE.from(ServiceAuditReport);
         return "All ServiceAuditReport records deleted";
     });
     this.on("getServiceAuditStatus", async () => {

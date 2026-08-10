@@ -16,7 +16,10 @@ service auditLoggingAndReportingService
     entity BTPConnection as projection on db.BTPConnection;
     entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
-    entity ServiceAuditReports as projection on db.ServiceAuditReport;
+    entity ServiceAuditReports as projection on db.ServiceAuditReport   excluding{
+         serviceInstanceId,
+        subaccountId
+    };
     //for sync btn
     action syncServiceLogs() returns String;
     action syncRoleLogs() returns String;

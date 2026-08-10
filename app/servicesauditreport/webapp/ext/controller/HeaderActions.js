@@ -22,14 +22,33 @@ sap.ui.define([
 
                 const status = data.lastSyncStatus || "-";
                 const lastSync = data.lastSyncAt || "-";
-                const records = data.recordsSynced || 0;
+              
                 const message = data.message || "-";
+                let formattedLastSync = "-";
+
+                if (data.lastSyncAt) {
+
+                    const date = new Date(data.lastSyncAt);
+
+                    formattedLastSync =
+                        new Intl.DateTimeFormat(
+                            undefined,
+                            {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: false
+                            }
+                        ).format(date);
+                }
 
                 MessageBox.information(
 
                     "Status : " + status +
-                    "\n\nLast Sync : " + lastSync +
-                    "\n\nRecords Synced : " + records +
+                    "\n\nLast Sync : " + formattedLastSync +
                     "\n\nMessage : " + message,
 
                     {
