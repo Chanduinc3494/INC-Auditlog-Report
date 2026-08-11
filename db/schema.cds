@@ -1,6 +1,9 @@
 namespace audit;
 
-using {cuid,managed} from '@sap/cds/common';
+using {
+    cuid,
+    managed
+} from '@sap/cds/common';
 
 entity UserAuditReport : cuid {
     system         : String(50);
@@ -47,43 +50,52 @@ entity ConfigurationReport : cuid {
 }
 
 entity ServiceAuditReport : cuid {
-    system        : String(50);  // System
-    instance      : String(80);
-    subaccount    : String(100); // Subaccount
-    serviceName   : String(100); // Service Name
-    planName      : String(100); // Plan Name
-    status        : String(50);  // Status
-    createdOn     : Timestamp;   // Created On
-    createdBy     : String(100); // Created By
-    changedOn     : Timestamp;   // Changed On
-    changedBy     : String(100); // Changed By
+    system            : String(50); // System
+    instance          : String(80);
+    subaccountId      : String(100);
+    serviceInstanceId : String(100);
+    subaccount        : String(100); // Subaccount
+    serviceName       : String(100); // Service Name
+    planName          : String(100); // Plan Name
+    status            : String(50); // Status
+    createdOn         : Timestamp; // Created On
+    createdBy         : String(100); // Created By
+    changedOn         : Timestamp; // Changed On
+    changedBy         : String(100); // Changed By
 }
+
 type ServiceType : String enum {
     AUDIT_LOG;
     SERVICE_MANAGER;
     ENTITLEMENTS;
     ACCOUNTS;
     SAAS_MANAGER;
+    CLOUD_FOUNDRY;
 };
+
 entity BTPConnection : cuid, managed {
-
-    subaccountId    : String(100);
-    subaccountName  : String(100);
-
-    serviceType     : ServiceType;
-
-    tokenUrl        : String(500);
-    apiBaseUrl      : String(500);
-
-    clientId        : String(255);
-    clientSecret    : LargeString;
-
-    region          : String(20);
-
-    active          : Boolean default true;
+    // BTP Subaccount
+    subaccountId   : String(100);
+    subaccountName : String(100);
+    // Type of external service
+    serviceType    : ServiceType;
+    // API connection
+    tokenUrl       : String(500);
+    apiBaseUrl     : String(500);
+    // OAuth client credentials
+    clientId       : String(255);
+    clientSecret   : LargeString;
+    // CF specific information
+    orgId          : String(100);
+    orgName        : String(100);
+    // Only required if using CF password grant
+    username       : String(255);
+    password       : LargeString;
+    region         : String(20);
+    active         : Boolean default true;
 }
 
-type ReportType : String enum {
+type ReportType  : String enum {
     USER_AUDIT;
     ROLE_AUDIT;
     CONFIGURATION;
@@ -96,17 +108,11 @@ entity ReportSyncStatus : cuid, managed {
     reportName     : ReportType;
 
     lastSyncAt     : Timestamp;
-
     lastSyncStatus : String(20);
     // SUCCESS
     // FAILED
     // RUNNING
-
     lastSyncBy     : String(100);
-
-    recordsSynced  : Integer;
-
     message        : String(500);
-
     isRunning      : Boolean default false;
 }

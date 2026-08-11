@@ -1,13 +1,17 @@
 sap.ui.define([
     "sap/m/MessageToast",
     "sap/m/MessageBox"
-], function (MessageToast, MessageBox) {
-    "use strict";
+], function(MessageToast,MessageBox) {
+    'use strict';
 
     return {
-
-        SyncServiceLogs: async function (oContext, aSelectedContexts) {
-
+        /**
+         * Generated event handler.
+         *
+         * @param oContext the context of the page on which the event was fired. `undefined` for list report page.
+         * @param aSelectedContexts the selected contexts of the table rows.
+         */
+        SyncRoleLogs: async function(oContext, aSelectedContexts) {
             try {
 
                 // --------------------------------------------------
@@ -15,7 +19,7 @@ sap.ui.define([
                 // --------------------------------------------------
 
                 const response = await fetch(
-                    "/odata/v4/audit-logging-and-reporting/syncServiceLogs",
+                    "/odata/v4/audit-logging-and-reporting/syncRoleLogs",
                     {
                         method: "POST",
                         headers: {
@@ -48,12 +52,12 @@ sap.ui.define([
                 // --------------------------------------------------
 
                 const oPage = sap.ui.getCore().byId(
-                    "servicesauditreport::ServiceAuditReportsList"
+                     "rolesauditreport::RoleAuditReportsList"
                 );
 
                 if (!oPage) {
                     console.error(
-                        "Service Audit List Report page not found."
+                        "Role Audit List Report page not found."
                     );
                     return;
                 }

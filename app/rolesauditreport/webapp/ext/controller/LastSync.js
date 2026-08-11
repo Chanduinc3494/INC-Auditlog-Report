@@ -1,17 +1,21 @@
 sap.ui.define([
+    "sap/m/MessageToast",
     "sap/m/MessageBox"
-], function (MessageBox) {
-
-    "use strict";
+], function(MessageToast, MessageBox) {
+    'use strict';
 
     return {
-
-        onLastSyncPress: async function () {
-
-            try {
+        /**
+         * Generated event handler.
+         *
+         * @param oContext the context of the page on which the event was fired. `undefined` for list report page.
+         * @param aSelectedContexts the selected contexts of the table rows.
+         */
+        onLastSyncPress: async function() {
+             try {
 
                 const response = await fetch(
-                    "/odata/v4/audit-logging-and-reporting/getServiceAuditStatus()"
+                    "/odata/v4/audit-logging-and-reporting/getRoleAudiStatus()"
                 );
 
                 if (!response.ok) {
@@ -52,7 +56,7 @@ sap.ui.define([
                     "\n\nMessage : " + message,
 
                     {
-                        title: "Service Audit Synchronization"
+                        title: "Role Audit Synchronization"
                     }
 
                 );
@@ -64,7 +68,6 @@ sap.ui.define([
             }
 
         }
-
+        
     };
-
 });

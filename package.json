@@ -22,21 +22,22 @@
     "deploy": "cf deploy mta_archives/archive.mtar --retries 1",
     "watch-rolesauditreport": "cds watch --open rolesauditreport/index.html?sap-ui-xx-viewCache=false --livereload false",
     "watch-configurationreport": "cds watch --open configurationreport/index.html?sap-ui-xx-viewCache=false --livereload false",
-    "watch-servicesauditreport": "cds watch --open servicesauditreport/index.html?sap-ui-xx-viewCache=false --livereload false"
+    "watch-servicesauditreport": "cds watch --open servicesauditreport/index.html?sap-ui-xx-viewCache=false --livereload false",
+    "watch-btp_connections": "cds watch --open btpconnections/index.html?sap-ui-xx-viewCache=false --livereload false"
   },
   "private": true,
- "cds": {
-  "requires": {
-    "[production]": {
-      "auth": "xsuaa",
-      "db": "hana"
-    },
-    "[hybrid]": {
-      "auth": "mocked",
-      "db": "hana"
+  "cds": {
+    "requires": {
+      "[production]": {
+        "auth": "xsuaa",
+        "db": "hana"
+      },
+      "[hybrid]": {
+        "auth": "mocked",
+        "db": "hana"
+      }
     }
-  }
-},
+  },
   "workspaces": [
     "app/*"
   ],
@@ -44,6 +45,7 @@
     "app/userauditreport",
     "app/rolesauditreport",
     "app/configurationreport",
-    "app/servicesauditreport"
+    "app/servicesauditreport",
+    "app/btp_connections"
   ]
 }
