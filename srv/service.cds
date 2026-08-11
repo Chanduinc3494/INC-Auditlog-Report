@@ -14,7 +14,7 @@ service auditLoggingAndReportingService
         virtual roleCriticality : Integer
     };
     @odata.draft.enabled
-    @requires: 'Admin'
+    // @requires: 'Admin'
     entity BTPConnection as projection on db.BTPConnection;
     entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
@@ -90,14 +90,14 @@ service auditLoggingAndReportingService
     entity ServiceChangedByVH as select from db.ServiceAuditReport { key changedBy } group by changedBy;
 
     @readonly
-    @requires: 'Admin'
+    // @requires: 'Admin'
     entity BTPRegionVH as select from db.BTPConnection {key region} group by region;
     // entity BTPServiceTypeVH as select from db.BTPConnection {key serviceType} group by serviceType;
     @readonly
-    @requires: 'Admin'
+    // @requires: 'Admin'
     entity BTPSubaccountVH as select from db.BTPConnection { key subaccountName } group by subaccountName;
     @readonly
-    @requires: 'Admin'
+    // @requires: 'Admin'
     entity BTPServiceTypeVH { key code : String(30); }
 
     
