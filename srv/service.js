@@ -11,7 +11,9 @@ const { SELECT,
     DELETE
 } = require("@sap/cds/lib/ql/cds-ql");
 const { fetchRoleLogs } = require("../lib/roleAuditFunction");
-const { formatAuditTimestamp } = require("../lib/utils")
+const { formatAuditTimestamp } = require("../lib/utils");
+const {fetchUsers} =require("../lib/cfUserApi");
+const cfAuth = require("../lib/cfAuth");
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
     const {
@@ -124,6 +126,19 @@ module.exports = cds.service.impl(async function () {
                     planMap.set(plan.id, plan);
                 }
 
+                const cfConnection = await SELECT.one.from(BTPConnection).where({subaccountId:connection.subaccountId,serviceType:"CLOUD_FOUNDRY",active:true});
+                
+                const userGuids =[...new Set(instances.items.map(instance=>instance.created_by).filter(Boolean))];
+
+                const userMap = new Map();
+                if(cfConnection && userGuids.length > 0){
+                    const cfToken = await cfAuth.getToken(cfConnection);
+                    const users = await fetchUsers(cfConnection,cfToken,userGuids);
+                    for(const user of users){
+                        userMap.set(user.guid,user);
+                    }
+                }
+
                 const currentInstanceIds = new Set();
 
                 for (const instance of instances.items) {
@@ -136,6 +151,8 @@ module.exports = cds.service.impl(async function () {
                         offeringMap.get(plan.service_offering_id);
 
                     if (!offering) continue;
+                    const creator = userMap.get(instance.created_by);
+                    const createdBy = creator?.username || instance.created_by;
 
                     const existing = await SELECT.one
                         .from(ServiceAuditReport)
@@ -162,7 +179,7 @@ module.exports = cds.service.impl(async function () {
 
                         changedOn: new Date(instance.updated_at),
 
-                        createdBy: instance.created_by,
+                        createdBy: createdBy,
 
                     };
 

@@ -48,6 +48,26 @@ annotate service.BTPConnection with @(
                 Label : 'Active',
                 Value : active,
             },
+            {
+                $Type : 'UI.DataField',
+                Value : username,
+                Label : 'CF username',
+            },
+            {
+                $Type : 'UI.DataField',
+                Value : password,
+                Label : 'CF password',
+            },
+            {
+                $Type : 'UI.DataField',
+                Value : orgName,
+                Label : 'CF orgName',
+            },
+            {
+                $Type : 'UI.DataField',
+                Value : orgId,
+                Label : 'CF orgId',
+            },
         ],
     },
     UI.Facets : [
