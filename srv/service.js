@@ -5,18 +5,24 @@ const authCsm = require("../lib/authCms");
 const { fetchEntitlementsLogs, fetchAccountDirectory } = require("../lib/cloudservice");
 const authServiceManager = require("../lib/authServiceMgr");
 const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("../lib/serviceAuditfns")
+const { fetchUserAuditLogs } = require("../lib/userAuditfns");
+const {fetchConfigurationAuditLogs} = require("../lib/configurationAuditFns");
+
+
+
 const { SELECT } = require("@sap/cds/lib/ql/cds-ql");
 module.exports = cds.service.impl(async function () {
-<<<<<<< Updated upstream
     const db = await cds.connect.to("db");
     const {
         UserAuditReport,
         ServiceAuditReport,
         BTPConnection,
-        ReportSyncStatus
+        ReportSyncStatus,
+        ConfigurationReport
     } = db.entities;
     try {
         const token = await authCsm.getToken();
+
 
 
         const subaccounts = await fetchAccountDirectory(token);
@@ -29,9 +35,7 @@ module.exports = cds.service.impl(async function () {
     } catch (err) {
         console.error("Startup sync failed:", err);
     }
-=======
-     const db = await cds.connect.to("db");
->>>>>>> Stashed changes
+     
     this.after("READ", "RoleAuditReports", (results) => {
         if (!results) return;
         const items = Array.isArray(results) ? results : [results];
@@ -58,7 +62,6 @@ module.exports = cds.service.impl(async function () {
         }
     });
 
-<<<<<<< Updated upstream
 
     // service logs
     this.on("syncServiceLogs", async (req) => {
@@ -249,7 +252,6 @@ module.exports = cds.service.impl(async function () {
     //     return "SUCCESSS";
     // })
 
-=======
     this.after("READ", "ConfigurationReports", (results) => {
         if (!results) return;
 
@@ -263,5 +265,218 @@ module.exports = cds.service.impl(async function () {
             }
         }
     });
->>>>>>> Stashed changes
+    
+    this.on("syncUserAuditLogs", async () => {
+
+    try {
+
+        console.log("=================================================");
+        console.log("Starting User Audit Log synchronization...");
+        console.log("=================================================");
+
+        // ---------------------------------------------------------
+        // 1. Get Audit Log Management token
+        // ---------------------------------------------------------
+
+        const token = await authCsm.getToken();
+
+        console.log("Audit Log token received");
+
+
+        // ---------------------------------------------------------
+        // 2. Fetch already correctly mapped audit logs
+        // ---------------------------------------------------------
+
+        const entries = await fetchUserAuditLogs(token);
+
+        console.log(
+            `Fetched ${entries.length} mapped audit log records`
+        );
+
+
+        if (!entries || entries.length === 0) {
+
+            console.log("No audit logs found");
+
+            return "No audit logs found";
+        }
+
+
+        // ---------------------------------------------------------
+        // 3. Debug first 5 records
+        // ---------------------------------------------------------
+
+        entries.slice(0, 5).forEach((entry, index) => {
+
+            console.log(
+                `Final User Audit Record ${index + 1}:`,
+                JSON.stringify(entry, null, 2)
+            );
+
+        });
+
+
+        // ---------------------------------------------------------
+        // 4. Delete existing records
+        // ---------------------------------------------------------
+
+        await DELETE.from(UserAuditReport);
+
+        console.log(
+            "Existing UserAuditReport records deleted"
+        );
+
+
+        // ---------------------------------------------------------
+        // 5. Insert records into HANA
+        // ---------------------------------------------------------
+
+        await INSERT
+            .into(UserAuditReport)
+            .entries(entries);
+
+
+        console.log(
+            `${entries.length} User Audit records inserted into HANA`
+        );
+
+
+        // ---------------------------------------------------------
+        // 6. Return success
+        // ---------------------------------------------------------
+
+        return `${entries.length} Audit logs synchronized successfully`;
+
+
+    } catch (err) {
+
+        console.error(
+            "User Audit Log synchronization failed:",
+            err
+        );
+
+        throw err;
+    }
+
 });
+
+this.on("syncConfigurationAuditLogs", async () => {
+
+    try {
+
+        console.log("=================================================");
+        console.log("Starting Configuration Audit Log synchronization...");
+        console.log("=================================================");
+
+
+        // ---------------------------------------------------------
+        // 1. Get Audit Log Management token
+        // ---------------------------------------------------------
+
+        const token =
+            await authCsm.getToken();
+
+        console.log(
+            "Audit Log token received"
+        );
+
+
+        // ---------------------------------------------------------
+        // 2. Fetch and map Configuration Audit Logs
+        // ---------------------------------------------------------
+
+        const entries =
+            await fetchConfigurationAuditLogs(token);
+
+        console.log(
+            `Fetched ${entries.length} mapped configuration audit records`
+        );
+
+
+        // ---------------------------------------------------------
+        // 3. No records
+        // ---------------------------------------------------------
+
+        if (
+            !entries ||
+            entries.length === 0
+        ) {
+
+            console.log(
+                "No configuration audit logs found"
+            );
+
+            return "No configuration audit logs found";
+
+        }
+
+
+        // ---------------------------------------------------------
+        // 4. Debug first 5 records
+        // ---------------------------------------------------------
+
+        entries
+            .slice(0, 5)
+            .forEach(
+                (entry, index) => {
+
+                    console.log(
+                        `Final Configuration Audit Record ${index + 1}:`,
+                        JSON.stringify(
+                            entry,
+                            null,
+                            2
+                        )
+                    );
+
+                }
+            );
+
+
+        // ---------------------------------------------------------
+        // 5. Delete old ConfigurationReport records
+        // ---------------------------------------------------------
+
+        await DELETE
+            .from(ConfigurationReport);
+
+        console.log(
+            "Existing ConfigurationReport records deleted"
+        );
+
+
+        // ---------------------------------------------------------
+        // 6. Insert new records
+        // ---------------------------------------------------------
+
+        await INSERT
+            .into(ConfigurationReport)
+            .entries(entries);
+
+        console.log(
+            `${entries.length} Configuration Audit records inserted into HANA`
+        );
+
+
+        // ---------------------------------------------------------
+        // 7. Return success
+        // ---------------------------------------------------------
+
+        return `${entries.length} Configuration Audit logs synchronized successfully`;
+
+
+    } catch (err) {
+
+        console.error(
+            "Configuration Audit Log synchronization failed:",
+            err
+        );
+
+        throw err;
+
+    }
+
+});
+
+});
+

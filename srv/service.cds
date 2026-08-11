@@ -17,16 +17,16 @@ service auditLoggingAndReportingService
     entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
     entity ServiceAuditReports as projection on db.ServiceAuditReport;
-<<<<<<< Updated upstream
-    //for sync btn
+
     action syncServiceLogs() returns String;
     action clearEntitlements() returns String;
-      function getServiceAuditStatus() returns ReportSyncStatus;
-=======
+    function getServiceAuditStatus() returns ReportSyncStatus;
+
     entity ConfigurationReports as projection on db.ConfigurationReport;
+    action syncConfigurationAuditLogs() returns String;
 
->>>>>>> Stashed changes
-
+    action syncUserAuditLogs() returns String;
+    function getUserAuditStatus() returns ReportSyncStatus;
 
     @readonly
     entity UserSystemVH as select from db.UserAuditReport { key system } group by system;

@@ -3,21 +3,21 @@ namespace audit;
 using {cuid,managed} from '@sap/cds/common';
 
 entity UserAuditReport : cuid {
-    system         : String(50); // System
-    timestamp      : Timestamp; // Timestamp (UTC)
-    eventType      : String(50); // Event Type
-    event          : String(100); // Event
-    userId         : String(100); // User ID
-    userName       : String(100); // User Name
-    userType       : String(50); // User Type
-    roleCollection : String(100); // Role Collection
-    fieldChanged   : String(100); // Field Changed
-    oldValue       : String(255); // Old Value
-    newValue       : String(255); // New Value
-    performedBy    : String(100); // Performed By
-    userRole       : String(100); // User Role
-    status         : String(20); // Status
-    subaccount     : String(100); // Subaccount
+    system         : String(50);
+    timestamp      : Timestamp;
+    eventType      : String(50);
+    event          : String(100);
+    userId         : String(100);
+    userName       : String(100);
+    userType       : String(50);
+    roleCollection : String(1000);
+    fieldChanged   : String(100);
+    oldValue       : String(255);
+    newValue       : String(255);
+    performedBy    : String(100);
+    userRole       : String(1000);
+    status         : String(20);
+    subaccount     : String(100);
 }
 
 entity RoleAuditReport : cuid {
@@ -37,7 +37,7 @@ entity RoleAuditReport : cuid {
 entity ConfigurationReport : cuid {
     system          : String(50);
     userId          : String(100);
-    userRole        : String(50);
+    userRole        : String(1000);
     eventType       : String(50);
     btpService      : String(100);
     subAccount      : String(100);

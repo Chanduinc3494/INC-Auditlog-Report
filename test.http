@@ -80,3 +80,20 @@ Content-Type: application/json
 
 ###
 GET http://localhost:4004/odata/v4/audit-logging-and-reporting/getServiceAuditStatus()
+
+###
+
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/syncUserAuditLogs
+Content-Type: application/json
+
+{}
+
+### Get Configuration Audit Reports
+GET http://localhost:4004/odata/v4/audit-logging-and-reporting/ConfigurationReports
+Accept: application/json
+
+### Synchronize Configuration Audit Logs
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/syncConfigurationAuditLogs
+Content-Type: application/json
+
+{}
