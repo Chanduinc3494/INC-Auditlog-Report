@@ -18,8 +18,6 @@ service auditLoggingAndReportingService
     entity ReportSyncStatus as projection on db.ReportSyncStatus;
 
 
-    entity ServiceAuditReports as projection on db.ServiceAuditReport;
-
     entity ServiceAuditReports as projection on db.ServiceAuditReport  
      excluding{
          serviceInstanceId,
