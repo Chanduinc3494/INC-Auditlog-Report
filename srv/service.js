@@ -1,19 +1,19 @@
 const cds = require("@sap/cds");
-const audit = require("../lib/auditLog");
-const authCsm = require("../lib/authCms");
+const audit = require("./lib/auditLog");
+const authCsm = require("./lib/authCms");
 
-const { fetchEntitlementsLogs, fetchAccountDirectory } = require("../lib/cloudservice");
-const authServiceManager = require("../lib/authServiceMgr");
-const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("../lib/serviceAuditfns")
+const { fetchEntitlementsLogs, fetchAccountDirectory } = require("./lib/cloudservice");
+const authServiceManager = require("./lib/authServiceMgr");
+const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("./lib/serviceAuditfns")
 const { SELECT,
     INSERT,
     UPDATE,
     DELETE
 } = require("@sap/cds/lib/ql/cds-ql");
-const { fetchRoleLogs } = require("../lib/roleAuditFunction");
-const { formatAuditTimestamp } = require("../lib/utils");
-const {fetchUsers} =require("../lib/cfUserApi");
-const cfAuth = require("../lib/cfAuth");
+const { fetchRoleLogs } = require("./lib/roleAuditFunction");
+const { formatAuditTimestamp } = require("./lib/utils");
+const {fetchUsers} =require("./lib/cfUserApi");
+const cfAuth = require("./lib/cfAuth");
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
     const {
