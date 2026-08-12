@@ -11,6 +11,7 @@ service auditLoggingAndReportingService
 
     entity ConfigurationReport as projection on db.ConfigurationReport {
         *,
+        virtual subaccountName : String(100),
         virtual roleCriticality : Integer
     };
     @odata.draft.enabled
@@ -73,8 +74,6 @@ service auditLoggingAndReportingService
     entity ConfigSystemVH as select from db.ConfigurationReport { key system } group by system;
     @readonly
     entity ConfigSubaccountVH as select from db.ConfigurationReport { key subAccount } group by subAccount;
-    @readonly
-    entity ConfigSubaccountNameVH as select from db.ConfigurationReport { key subaccountName } group by subaccountName;
     @readonly
     entity ConfigRoleCollectionVH as select from db.ConfigurationReport { key userRole as roleCollection } group by userRole;
     @readonly

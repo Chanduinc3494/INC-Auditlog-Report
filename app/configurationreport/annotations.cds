@@ -44,20 +44,6 @@ annotate service.ConfigurationReport with {
         }
     );
 
-    subaccountName @(
-        Common.ValueListWithFixedValues : true,
-        Common.ValueList : {
-            CollectionPath : 'ConfigSubaccountNameVH',
-            Parameters : [
-                {
-                    $Type : 'Common.ValueListParameterInOut',
-                    LocalDataProperty : subaccountName,
-                    ValueListProperty : 'subaccountName'
-                }
-            ]
-        }
-    );
-
     userRole @(
         Common.ValueListWithFixedValues : true,
         Common.ValueList : {
@@ -114,7 +100,6 @@ annotate service.ConfigurationReport with @(
     UI.SelectionFields : [
         system,
         subAccount,
-        subaccountName,
         userRole,
         eventType,
         userId,

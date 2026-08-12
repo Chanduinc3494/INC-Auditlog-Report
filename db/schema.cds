@@ -44,7 +44,6 @@ entity ConfigurationReport : cuid {
     eventType       : String(50);
     btpService      : String(100);
     subAccount      : String(100);
-    subaccountName  : String(100);
     region          : String(100);
     actionPerformed : String(255);
     timestamp       : Timestamp;
