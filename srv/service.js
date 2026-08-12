@@ -1054,8 +1054,14 @@ this.on("syncConfigurationAuditLogs",  async () => {
                         ) {
 
                             log.subAccount =
-                                connection.subaccountName || "";
+                                log.tenant ||
+                                log.subaccount ||
+                                connection.subaccountId ||
+                                "";
                         }
+
+                        log.subaccountName =
+                            connection.subaccountName || "";
 
                         entries.push(
                             log

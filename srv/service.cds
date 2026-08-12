@@ -74,6 +74,8 @@ service auditLoggingAndReportingService
     @readonly
     entity ConfigSubaccountVH as select from db.ConfigurationReport { key subAccount } group by subAccount;
     @readonly
+    entity ConfigSubaccountNameVH as select from db.ConfigurationReport { key subaccountName } group by subaccountName;
+    @readonly
     entity ConfigRoleCollectionVH as select from db.ConfigurationReport { key userRole as roleCollection } group by userRole;
     @readonly
     entity ConfigEventVH as select from db.ConfigurationReport { key eventType as event } group by eventType;
