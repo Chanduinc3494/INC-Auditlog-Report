@@ -128,6 +128,24 @@
                     "type": "GridTable"
                   }
                 }
+              },
+              "content": {
+                "header": {
+                  "actions": {
+                    "SyncStatusBtn": {
+                      "press": "configurationreport.ext.controller.LastSyncBtn.lastSyncFunction",
+                      "visible": true,
+                      "enabled": true,
+                      "text": "Last Sync  info"
+                    },
+                    "SyncBtn": {
+                      "press": "configurationreport.ext.controller.SyncBtn.SyncBtnFunction",
+                      "visible": true,
+                      "enabled": true,
+                      "text": "Sync"
+                    }
+                  }
+                }
               }
             }
           }

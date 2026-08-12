@@ -31,6 +31,7 @@ service auditLoggingAndReportingService {
     //for sync btn
     action   syncServiceLogs()             returns String;
     action   syncRoleLogs()                returns String;
+    action syncConfigurationAuditLogs()    returns String;
     action   clearEntitlements()           returns String;
     function getServiceAuditStatus()       returns ReportSyncStatus;
     function getRoleAudiStatus()           returns ReportSyncStatus;
