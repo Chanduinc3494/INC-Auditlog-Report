@@ -263,5 +263,7 @@ service auditLoggingAndReportingService {
     //job scheduling actions
     @requires: 'JobScheduler'
     action   scheduledSyncRoleLogs()       returns String;
+    @requires: 'JobScheduler'
+    action   scheduledSyncServiceLogs()       returns String;
 
 }

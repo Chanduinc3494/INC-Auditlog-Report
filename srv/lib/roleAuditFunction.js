@@ -1,43 +1,65 @@
-const axios= require("axios");
+const axios = require("axios");
 async function fetchRoleLogs(baseUrl, token, timeFrom, timeTo) {
 
     const allLogs = [];
 
     let handle = null;
+    try {
+        while (true) {
 
-    while (true) {
+            let url;
 
-        let url;
+            if (handle) {
 
-        if (handle) {
+                url = `${baseUrl}/auditlog/v2/auditlogrecords?handle=${encodeURIComponent(handle)}`;
 
-            url = `${baseUrl}/auditlog/v2/auditlogrecords?handle=${encodeURIComponent(handle)}`;
+            } else {
 
-        } else {
-
-            url =
-                `${baseUrl}/auditlog/v2/auditlogrecords` +
-                `?category=audit.configuration` +
-                `&time_from=${encodeURIComponent(timeFrom)}` +
-                `&time_to=${encodeURIComponent(timeTo)}`;
-        }
-
-        const response = await axios.get(url, {
-            headers: {
-                Authorization: `Bearer ${token}`
+                url =
+                    `${baseUrl}/auditlog/v2/auditlogrecords` +
+                    `?category=audit.configuration` +
+                    `&time_from=${encodeURIComponent(timeFrom)}` +
+                    `&time_to=${encodeURIComponent(timeTo)}`;
             }
-        });
 
-        allLogs.push(...response.data);
+            const response = await axios.get(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
 
-        handle = extractHandle(response.headers["paging"]);
+            allLogs.push(...response.data);
 
-        if (!handle) {
-            break;
+            handle = extractHandle(response.headers["paging"]);
+
+            if (!handle) {
+                break;
+            }
         }
-    }
 
-    return allLogs;
+        return allLogs;
+    } catch (err) {
+        const status = err.response?.status;
+
+        const data = err.response?.data;
+        let details;
+        if (typeof data === "string") {
+            details = data;
+        } else if (data?.message) {
+            details = data.message;
+        } else if (data?.error_description) {
+            details = data.error_description;
+        } else if (data?.error) {
+            details = data.error;
+        } else {
+            details = err.message;
+        }
+        throw new Error(
+            `Failed to fetch role audit logs` +
+            `${status ? ` (HTTP ${status})` : ""}: ` +
+            `${details}`
+        );
+    }
 }
 
 function extractHandle(pagingHeader) {

@@ -12,6 +12,8 @@ const { fetchUsers } = require("./lib/cfUserApi");
 const cfAuth = require("./lib/cfAuth");
 const { indexof } = require("@cap-js/hana/lib/cql-functions");
 const { fetchSubaccount } = require("./lib/subaccountApi");
+const { getErrorMessage } = require("./lib/errorMessage");
+
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
     const {
@@ -75,6 +77,7 @@ module.exports = cds.service.impl(async function () {
 
                 const token = await oAuthManager.getToken(connection);
 
+
                 const sapBtpPlans = await fetchServicePlans(
                     connection.apiBaseUrl,
                     token,
@@ -112,6 +115,7 @@ module.exports = cds.service.impl(async function () {
                     connection.apiBaseUrl,
                     token
                 );
+
 
                 const offeringMap = new Map();
                 const planMap = new Map();
@@ -222,7 +226,7 @@ module.exports = cds.service.impl(async function () {
             await UPDATE(ReportSyncStatus)
                 .set({
                     lastSyncAt: new Date(),
-                    lastRunAt:new Date(),
+                    lastRunAt: new Date(),
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
                     message: "Synchronization completed"
@@ -235,18 +239,20 @@ module.exports = cds.service.impl(async function () {
 
         } catch (err) {
 
+            const errorMessage = getErrorMessage(err);
+
             await UPDATE(ReportSyncStatus)
                 .set({
                     lastRunAt: new Date(),
                     lastSyncStatus: "FAILED",
                     isRunning: false,
-                    message: err.message
+                    message: errorMessage
                 })
                 .where({
                     reportName: "SERVICE_AUDIT"
                 });
 
-            throw err;
+            throw new Error(errorMessage);
         }
 
     });
@@ -299,7 +305,7 @@ module.exports = cds.service.impl(async function () {
 
             let subaccountMap = new Map();
 
-            
+
             for (const subaccountId of subaccountIds) {
                 subaccountMap.set(
                     subaccountId,
@@ -565,7 +571,7 @@ module.exports = cds.service.impl(async function () {
             await UPDATE(ReportSyncStatus)
                 .set({
                     lastSyncAt: timeTo,
-                    lastRunAt:timeTo,
+                    lastRunAt: timeTo,
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
                     message: "Synchronization completed"
@@ -577,19 +583,19 @@ module.exports = cds.service.impl(async function () {
             return "Synchronization completed";
 
         } catch (err) {
-
+            const errorMessage = getErrorMessage(err);
             await UPDATE(ReportSyncStatus)
                 .set({
-                    lastRunAt:new Date(),
+                    lastRunAt: new Date(),
                     lastSyncStatus: "FAILED",
                     isRunning: false,
-                    message: err.message
+                    message: errorMessage
                 })
                 .where({
                     reportName: "ROLE_AUDIT"
                 });
 
-            throw err;
+            throw new Error(errorMessage);
         }
     })
 
@@ -633,6 +639,9 @@ module.exports = cds.service.impl(async function () {
 
     this.on("scheduledSyncRoleLogs", async (req) => {
         return await this.send("syncRoleLogs", {});
+    });
+    this.on("scheduledSyncServiceLogs", async (req) => {
+        return await this.send("syncServiceLogs", {});
     });
 
 });
