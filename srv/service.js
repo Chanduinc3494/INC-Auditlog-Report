@@ -1050,10 +1050,10 @@ this.on("syncConfigurationAuditLogs",  async () => {
                          */
 
                         if (
-                            !log.subaccountName
+                            !log.subAccount
                         ) {
 
-                            log.subaccountName =
+                            log.subAccount =
                                 connection.subaccountName || "";
                         }
 
