@@ -7,8 +7,7 @@ annotate service.ConfigurationReport with {
     userRole        @(Common.Label : 'User Role');
     eventType       @(Common.Label : 'Event Type');
     btpService      @(Common.Label : 'BTP Service');
-    subAccount      @(Common.Label : 'Subaccount');
-    subaccountName  @(Common.Label : 'Subaccount Name');
+    subAccount      @(Common.Label : 'Subaccount Name');
     region          @(Common.Label : 'Region');
     actionPerformed @(Common.Label : 'Action Performed');
     timestamp    @(Common.Label : 'Timestamp');
@@ -147,11 +146,6 @@ annotate service.ConfigurationReport with @(
             $Type : 'UI.DataField',
             Value : subAccount,
             ![@HTML5.CssDefaults] : { width : '11%' }
-        },
-        {
-            $Type : 'UI.DataField',
-            Value : subaccountName,
-            ![@HTML5.CssDefaults] : { width : '13%' }
         },
         {
             $Type : 'UI.DataField',

@@ -11,7 +11,6 @@ service auditLoggingAndReportingService
 
     entity ConfigurationReport as projection on db.ConfigurationReport {
         *,
-        virtual subaccountName : String(100),
         virtual roleCriticality : Integer
     };
     @odata.draft.enabled

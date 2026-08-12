@@ -58,8 +58,6 @@ module.exports = cds.service.impl(async function () {
         if (!results) return;
         const items = Array.isArray(results) ? results : [results];
         for (const item of items) {
-            item.subaccountName = item.subAccount || "";
-
             if (item.userRole === "App_Dev") {
                 item.roleCriticality = 2; // Critical (yellow)
             } else {
@@ -597,8 +595,6 @@ module.exports = cds.service.impl(async function () {
         const items = Array.isArray(results) ? results : [results];
 
         for (const item of items) {
-            item.subaccountName = item.subAccount || "";
-
             if (item.userRole === "App_Dev") {
                 item.roleCriticality = 2;
             } else {
