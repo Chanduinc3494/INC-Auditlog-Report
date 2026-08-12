@@ -130,7 +130,8 @@
                     "selectAll": false,
                     "quickVariantSelection": {
                       "showCounts": true
-                    }
+                    },
+                    "widthIncludingColumnHeader": true
                   }
                 }
               },

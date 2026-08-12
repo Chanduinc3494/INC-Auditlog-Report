@@ -15,11 +15,6 @@ annotate service.BTPConnection with @(
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Service Type',
-                Value : serviceType,
-            },
-            {
-                $Type : 'UI.DataField',
                 Label : 'Token Url',
                 Value : tokenUrl,
             },
@@ -40,16 +35,6 @@ annotate service.BTPConnection with @(
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Region',
-                Value : region,
-            },
-            {
-                $Type : 'UI.DataField',
-                Label : 'Active',
-                Value : active,
-            },
-            {
-                $Type : 'UI.DataField',
                 Value : username,
                 Label : 'CF username',
             },
@@ -60,13 +45,13 @@ annotate service.BTPConnection with @(
             },
             {
                 $Type : 'UI.DataField',
-                Value : orgName,
-                Label : 'CF orgName',
+                Label : 'Service Type',
+                Value : serviceType,
             },
             {
                 $Type : 'UI.DataField',
-                Value : orgId,
-                Label : 'CF orgId',
+                Label : 'Active',
+                Value : active,
             },
         ],
     },
@@ -99,14 +84,9 @@ annotate service.BTPConnection with @(
             Label : 'apiBaseUrl',
             Value : apiBaseUrl,
         },
-        {
-            $Type : 'UI.DataField',
-            Value : region,
-        },
     ],
     UI.SelectionFields : [
         subaccountName,
-        region,
         serviceType,
     ],
     UI.HeaderInfo : {

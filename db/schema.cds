@@ -23,8 +23,10 @@ entity UserAuditReport : cuid {
     subaccount     : String(100); // Subaccount
 }
 
+@assert.unique.auditEntry: [messageId]
 entity RoleAuditReport : cuid {
     system          : String(50); // System
+    messageId       : String(100); // Unique logs id
     roleCollection  : String(100); // Role Collection
     event           : String(100); // Event
     timestamp       : Timestamp; // Timestamp (UTC)
@@ -85,13 +87,9 @@ entity BTPConnection : cuid, managed {
     // OAuth client credentials
     clientId       : String(255);
     clientSecret   : LargeString;
-    // CF specific information
-    orgId          : String(100);
-    orgName        : String(100);
     // Only required if using CF password grant
     username       : String(255);
     password       : LargeString;
-    region         : String(20);
     active         : Boolean default true;
 }
 
@@ -104,9 +102,10 @@ type ReportType  : String enum {
 };
 
 entity ReportSyncStatus : cuid, managed {
-
     reportName     : ReportType;
-
+    // Last time the Sync action was triggered
+    lastRunAt      : Timestamp;
+    // Last time synchronization completed successfully
     lastSyncAt     : Timestamp;
     lastSyncStatus : String(20);
     // SUCCESS

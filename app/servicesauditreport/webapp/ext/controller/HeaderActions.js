@@ -79,11 +79,6 @@ sap.ui.define([
         onLastSyncPress: async function () {
 
             try {
-
-                // --------------------------------------------------
-                // 1. Get the List Report page
-                // --------------------------------------------------
-
                 const oPage = sap.ui.getCore().byId(
                     "servicesauditreport::ServiceAuditReportsList"
                 );
@@ -93,11 +88,6 @@ sap.ui.define([
                         "Service Audit List Report page not found."
                     );
                 }
-
-                // --------------------------------------------------
-                // 2. Get OData V4 model
-                // --------------------------------------------------
-
                 const oModel = oPage.getModel();
 
                 if (!oModel) {
@@ -105,36 +95,41 @@ sap.ui.define([
                         "OData V4 model not found."
                     );
                 }
-
-                // --------------------------------------------------
-                // 3. Call unbound OData V4 function
-                // --------------------------------------------------
-
                 const oOperation = oModel.bindContext(
                     "/getServiceAuditStatus(...)"
                 );
 
                 await oOperation.execute();
-
-                // --------------------------------------------------
-                // 4. Read function result
-                // --------------------------------------------------
-
                 const data =
                     oOperation.getBoundContext().getObject();
-
-                // --------------------------------------------------
-                // 5. Extract status information
-                // --------------------------------------------------
-
                 const status =
                     data?.lastSyncStatus || "-";
 
                 const message =
                     data?.message || "-";
 
-                let formattedLastSync = "-";
+                let formattedLastRun = "-";
+                if (data?.lastRunAt) {
+                    const date =
+                        new Date(data.lastRunAt);
 
+                    formattedLastRun =
+                        new Intl.DateTimeFormat(
+                            undefined,
+                            {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: false
+                            }
+                        ).format(date);
+                }
+
+
+                let formattedLastSync = "-";
                 if (data?.lastSyncAt) {
 
                     const date =
@@ -152,21 +147,16 @@ sap.ui.define([
                                 second: "2-digit",
                                 hour12: false
                             }
-                        ).format(date);
-                }
-
-                // --------------------------------------------------
-                // 6. Show synchronization status
-                // --------------------------------------------------
-
-                MessageBox.information(
-
+                        ).format(date);}
+                        
+                   MessageBox.information(
                     "Status : " + status +
-                    "\n\nLast Sync : " + formattedLastSync +
+                    "\n\nLast Run : " + formattedLastRun +
+                    "\n\nLast Successful Sync : " +
+                    formattedLastSync +
                     "\n\nMessage : " + message,
-
                     {
-                        title: "Service Audit Synchronization"
+                        title:"Service Audit Synchronization"
                     }
                 );
 

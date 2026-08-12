@@ -1,9 +1,5 @@
 const cds = require("@sap/cds");
-const audit = require("./lib/auditLog");
-const authCsm = require("./lib/authCms");
-
-const { fetchEntitlementsLogs, fetchAccountDirectory } = require("./lib/cloudservice");
-const authServiceManager = require("./lib/authServiceMgr");
+const oAuthManager = require("./lib/oAuthToken");
 const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("./lib/serviceAuditfns")
 const { SELECT,
     INSERT,
@@ -12,8 +8,10 @@ const { SELECT,
 } = require("@sap/cds/lib/ql/cds-ql");
 const { fetchRoleLogs } = require("./lib/roleAuditFunction");
 const { formatAuditTimestamp } = require("./lib/utils");
-const {fetchUsers} =require("./lib/cfUserApi");
+const { fetchUsers } = require("./lib/cfUserApi");
 const cfAuth = require("./lib/cfAuth");
+const { indexof } = require("@cap-js/hana/lib/cql-functions");
+const { fetchSubaccount } = require("./lib/subaccountApi");
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
     const {
@@ -75,7 +73,7 @@ module.exports = cds.service.impl(async function () {
 
             for (const connection of connections) {
 
-                const token = await authServiceManager.getToken(connection);
+                const token = await oAuthManager.getToken(connection);
 
                 const sapBtpPlans = await fetchServicePlans(
                     connection.apiBaseUrl,
@@ -126,16 +124,16 @@ module.exports = cds.service.impl(async function () {
                     planMap.set(plan.id, plan);
                 }
 
-                const cfConnection = await SELECT.one.from(BTPConnection).where({subaccountId:connection.subaccountId,serviceType:"CLOUD_FOUNDRY",active:true});
-                
-                const userGuids =[...new Set(instances.items.map(instance=>instance.created_by).filter(Boolean))];
+                const cfConnection = await SELECT.one.from(BTPConnection).where({ subaccountId: connection.subaccountId, serviceType: "CLOUD_FOUNDRY", active: true });
+
+                const userGuids = [...new Set(instances.items.map(instance => instance.created_by).filter(Boolean))];
 
                 const userMap = new Map();
-                if(cfConnection && userGuids.length > 0){
+                if (cfConnection && userGuids.length > 0) {
                     const cfToken = await cfAuth.getToken(cfConnection);
-                    const users = await fetchUsers(cfConnection,cfToken,userGuids);
-                    for(const user of users){
-                        userMap.set(user.guid,user);
+                    const users = await fetchUsers(cfConnection, cfToken, userGuids);
+                    for (const user of users) {
+                        userMap.set(user.guid, user);
                     }
                 }
 
@@ -204,7 +202,7 @@ module.exports = cds.service.impl(async function () {
                 const existingRecords = await SELECT.from(ServiceAuditReport).columns("ID", "serviceInstanceId").where({
                     subaccountId: connection.subaccountId
                 })
-              
+
                 for (const record of existingRecords) {
                     if (
                         !currentInstanceIds.has(
@@ -224,6 +222,7 @@ module.exports = cds.service.impl(async function () {
             await UPDATE(ReportSyncStatus)
                 .set({
                     lastSyncAt: new Date(),
+                    lastRunAt:new Date(),
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
                     message: "Synchronization completed"
@@ -238,7 +237,7 @@ module.exports = cds.service.impl(async function () {
 
             await UPDATE(ReportSyncStatus)
                 .set({
-                    lastSyncAt: new Date(),
+                    lastRunAt: new Date(),
                     lastSyncStatus: "FAILED",
                     isRunning: false,
                     message: err.message
@@ -283,6 +282,63 @@ module.exports = cds.service.impl(async function () {
                     serviceType: "AUDIT_LOG",
                     active: true
                 });
+            const subaccountIds = [
+                ...new Set(
+                    connections
+                        .map(connection => connection.subaccountId)
+                        .filter(Boolean)
+                )
+            ];
+
+            const accountsConnection = await SELECT.one
+                .from(BTPConnection)
+                .where({
+                    serviceType: "ACCOUNTS",
+                    active: true
+                });
+
+            let subaccountMap = new Map();
+
+            
+            for (const subaccountId of subaccountIds) {
+                subaccountMap.set(
+                    subaccountId,
+                    subaccountId
+                );
+            }
+
+            if (accountsConnection) {
+
+                try {
+
+                    const accountsToken =
+                        await oAuthManager.getToken(
+                            accountsConnection
+                        );
+
+                    const fetchedMap =
+                        await fetchSubaccount(
+                            accountsConnection.apiBaseUrl,
+                            accountsToken,
+                            subaccountIds
+                        );
+
+                    // Replace fallback map with actual values
+                    for (const [subaccountId, subaccountName] of fetchedMap) {
+                        subaccountMap.set(
+                            subaccountId,
+                            subaccountName
+                        );
+                    }
+
+                } catch (err) {
+
+                    console.warn(
+                        "Could not fetch subaccount names. Using subaccount IDs instead.",
+                        err.message
+                    );
+                }
+            }
             const entries = [];
             const timeTo = formatAuditTimestamp(new Date());
             const timeFrom =
@@ -293,7 +349,8 @@ module.exports = cds.service.impl(async function () {
             console.log(`Syncing from ${timeFrom} to ${timeTo}`);
 
             for (const connection of connections) {
-                const token = await authServiceManager.getToken(connection);
+                const subaccountName = subaccountMap.get(connection.subaccountId) || connection.subaccountId;
+                const token = await oAuthManager.getToken(connection);
                 const roleLogs = await fetchRoleLogs(connection.apiBaseUrl, token, timeFrom, timeTo);
 
 
@@ -325,7 +382,7 @@ module.exports = cds.service.impl(async function () {
                         entry = {
 
                             system: "BTP",
-
+                            messageId: log.message_uuid,
                             roleCollection: obj.name,
 
                             event: "Create",
@@ -344,7 +401,7 @@ module.exports = cds.service.impl(async function () {
 
                             status: message.success ? "Success" : "Failure",
 
-                            subaccountName: connection.subaccountName
+                            subaccountName: subaccountName
 
                         };
 
@@ -359,7 +416,7 @@ module.exports = cds.service.impl(async function () {
                         entry = {
 
                             system: "BTP",
-
+                            messageId: log.message_uuid,
                             roleCollection: obj.name,
 
                             event: "Delete",
@@ -378,7 +435,7 @@ module.exports = cds.service.impl(async function () {
 
                             status: message.success ? "Success" : "Failure",
 
-                            subaccountName: connection.subaccountName
+                            subaccountName: subaccountName
 
                         };
 
@@ -393,7 +450,7 @@ module.exports = cds.service.impl(async function () {
                         entry = {
 
                             system: "BTP",
-
+                            messageId: log.message_uuid,
                             roleCollection: obj.rolecollection_name,
 
                             event: "Assign",
@@ -412,7 +469,7 @@ module.exports = cds.service.impl(async function () {
 
                             status: message.success ? "Success" : "Failure",
 
-                            subaccountName: connection.subaccountName
+                            subaccountName: subaccountName
 
                         };
 
@@ -427,7 +484,7 @@ module.exports = cds.service.impl(async function () {
                         entry = {
 
                             system: "BTP",
-
+                            messageId: log.message_uuid,
                             roleCollection: obj.rolecollection_name,
 
                             event: "Remove",
@@ -467,7 +524,7 @@ module.exports = cds.service.impl(async function () {
                             entries.push({
 
                                 system: "BTP",
-
+                                messageId: log.message_uuid,
                                 roleCollection: obj.name,
 
                                 event: "Update",
@@ -489,7 +546,7 @@ module.exports = cds.service.impl(async function () {
                                 subaccountName: connection.subaccountName
 
                             });
-                           
+
                         }
 
                         continue;
@@ -508,6 +565,7 @@ module.exports = cds.service.impl(async function () {
             await UPDATE(ReportSyncStatus)
                 .set({
                     lastSyncAt: timeTo,
+                    lastRunAt:timeTo,
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
                     message: "Synchronization completed"
@@ -522,7 +580,7 @@ module.exports = cds.service.impl(async function () {
 
             await UPDATE(ReportSyncStatus)
                 .set({
-                    lastSyncAt: new Date(),
+                    lastRunAt:new Date(),
                     lastSyncStatus: "FAILED",
                     isRunning: false,
                     message: err.message
@@ -537,7 +595,7 @@ module.exports = cds.service.impl(async function () {
 
 
     this.on("clearEntitlements", async () => {
-        await DELETE.from(ServiceAuditReport);
+        await DELETE.from(RoleAuditReport);
         return "All ServiceAuditReport records deleted";
     });
     this.on("getServiceAuditStatus", async () => {
@@ -549,7 +607,7 @@ module.exports = cds.service.impl(async function () {
             });
 
     });
-     this.on("getRoleAudiStatus", async () => {
+    this.on("getRoleAudiStatus", async () => {
 
         return await SELECT.one
             .from(ReportSyncStatus)
@@ -558,7 +616,7 @@ module.exports = cds.service.impl(async function () {
             });
 
     });
-     this.on("getConfigurationAuditStatus", async () => {
+    this.on("getConfigurationAuditStatus", async () => {
 
         return await SELECT.one
             .from(ReportSyncStatus)
@@ -572,5 +630,9 @@ module.exports = cds.service.impl(async function () {
     //     await db.insert(UserAuditReport).enteries(logs);
     //     return "SUCCESSS";
     // })
+
+    this.on("scheduledSyncRoleLogs", async (req) => {
+        return await this.send("syncRoleLogs", {});
+    });
 
 });

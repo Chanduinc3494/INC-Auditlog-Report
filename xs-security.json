@@ -10,6 +10,13 @@
     {
       "name": "$XSAPPNAME.Admin",
       "description": "Administrator access"
+    },
+    {
+      "name": "$XSAPPNAME.JobScheduler",
+      "description": "Scope for SAP Job Scheduling Service",
+      "grant-as-authority-to-apps": [
+        "$XSSERVICENAME(jobscheduling-service-poc)"
+      ]
     }
   ],
   "role-templates": [

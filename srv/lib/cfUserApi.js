@@ -1,15 +1,4 @@
 const axios = require("axios");
-
-
-/**
- * Fetch one page of CF users.
- *
- * @param {Object} connection
- * @param {String} token
- * @param {Array} userGuids
- * @param {Number} page
- * @param {Number} perPage
- */
 async function fetchUsersPage(
     connection,
     token,
@@ -41,12 +30,6 @@ async function fetchUsersPage(
 }
 
 
-/**
- * Fetch all users for the supplied GUIDs.
- *
- * GUIDs are processed in chunks so that the URL
- * does not become unnecessarily large.
- */
 async function fetchUsers(
     connection,
     token,
@@ -56,10 +39,7 @@ async function fetchUsers(
     if (!userGuids || userGuids.length === 0) {
         return [];
     }
-
     const allUsers = [];
-
-    // Process maximum 500 GUIDs per request.
     const chunkSize = 500;
 
     for (

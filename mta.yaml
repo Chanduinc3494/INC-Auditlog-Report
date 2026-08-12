@@ -9,6 +9,7 @@ modules:
     requires:
       - name: auditLoggingAndReporting-auth
       - name: auditLoggingAndReporting-db
+      - name: auditLoggingAndReporting-jobscheduler
     provides:
       - name: srv-api
         properties:
@@ -159,6 +160,10 @@ resources:
     parameters:
       service: hana
       service-plan: hdi-shared
+  - name: auditLoggingAndReporting-jobscheduler
+    type: org.cloudfoundry.existing-service
+    parameters:
+      service-name: jobscheduling-service-poc
   - name: auditLoggingAndReporting-destination-service
     type: org.cloudfoundry.managed-service
     parameters:
