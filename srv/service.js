@@ -9,6 +9,7 @@ const { SELECT,
 const { fetchRoleLogs } = require("./lib/roleAuditFunction");
 const { formatAuditTimestamp } = require("./lib/utils");
 const { fetchUsers } = require("./lib/cfUserApi");
+const {fetchUserAuditLogs} = require("./lib/userAuditfns")
 const { fetchConfigurationAuditLogs, mapConfigurationAuditLog } = require("./lib/configurationAuditFns");
 const cfAuth = require("./lib/cfAuth");
 const { indexof } = require("@cap-js/hana/lib/cql-functions");
@@ -752,7 +753,7 @@ module.exports = cds.service.impl(async function () {
                             entry.subAccount = subaccountName;
                             entry.region = region;
 
-                            
+
 
                             entries.push(entry);
                         }
@@ -800,11 +801,232 @@ module.exports = cds.service.impl(async function () {
             throw err;
         }
     });
+
+    //user report sync
+    // user report sync
+this.on("syncUserAuditLogs", async () => {
+
+    let syncStatus = await SELECT.one
+        .from(ReportSyncStatus)
+        .where({ reportName: "USER_AUDIT" });
+
+    // Create / mark sync as RUNNING
+    if (!syncStatus) {
+
+        await INSERT.into(ReportSyncStatus).entries({
+            reportName: "USER_AUDIT",
+            lastSyncStatus: "RUNNING",
+            isRunning: true
+        });
+
+    } else {
+
+        await UPDATE(ReportSyncStatus)
+            .set({
+                isRunning: true,
+                lastSyncStatus: "RUNNING"
+            })
+            .where({
+                reportName: "USER_AUDIT"
+            });
+    }
+
+    try {
+
+        const connections = await SELECT
+            .from(BTPConnection)
+            .where({
+                serviceType: "AUDIT_LOG",
+                active: true
+            });
+
+        // No active connections
+        if (!connections || connections.length === 0) {
+
+            await UPDATE(ReportSyncStatus)
+                .set({
+                    lastRunAt: formatAuditTimestamp(new Date()),
+                    lastSyncStatus: "SUCCESS",
+                    isRunning: false,
+                    message: "No active Audit Log connections found."
+                })
+                .where({
+                    reportName: "USER_AUDIT"
+                });
+
+            return "No active Audit Log connections found";
+        }
+
+        /*
+         * Fetch only logs since the previous successful sync.
+         * First run starts from 1970.
+         */
+        const timeFrom = syncStatus?.lastSyncAt
+            ? formatAuditTimestamp(syncStatus.lastSyncAt)
+            : formatAuditTimestamp("1970-01-01T00:00:00Z");
+
+        const timeTo = formatAuditTimestamp(new Date());
+
+        const entries = [];
+
+        for (const connection of connections) {
+
+            try {
+
+                const token =
+                    await oAuthManager.getToken(connection);
+
+                if (!token) {
+                    console.warn(
+                        `No token available for ${
+                            connection.subaccountName || "Unknown"
+                        }`
+                    );
+
+                    continue;
+                }
+
+                const connectionEntries =
+                    await fetchUserAuditLogs(
+                        connection,
+                        token,
+                        timeFrom,
+                        timeTo
+                    );
+
+                if (connectionEntries && connectionEntries.length > 0) {
+
+                    entries.push(
+                        ...connectionEntries
+                    );
+                }
+
+            } catch (connectionError) {
+
+                console.error(
+                    "-------------------------------------------------"
+                );
+
+                console.error(
+                    `Failed processing User Audit logs for ${
+                        connection.subaccountName || "Unknown"
+                    }`
+                );
+
+                console.error(
+                    connectionError.message
+                );
+
+                /*
+                 * Continue with other connections instead of
+                 * failing the complete synchronization.
+                 */
+                continue;
+            }
+        }
+
+        /*
+         * No new records
+         */
+        if (!entries || entries.length === 0) {
+
+            await UPDATE(ReportSyncStatus)
+                .set({
+                    lastSyncAt: timeTo,
+                    lastRunAt: timeTo,
+                    lastSyncStatus: "SUCCESS",
+                    isRunning: false,
+                    message:
+                        "Synchronization completed. No new User Audit records found."
+                })
+                .where({
+                    reportName: "USER_AUDIT"
+                });
+
+            console.log(
+                "No new User Audit logs found"
+            );
+
+            return "No new User Audit logs found";
+        }
+
+        /*
+         * Debug: show first 5 records
+         */
+        entries.slice(0, 5).forEach((entry, index) => {
+
+            console.log(
+                `Final User Audit Record ${index + 1}:`,
+                JSON.stringify(entry, null, 2)
+            );
+
+        });
+
+        /*
+         * Insert new records
+         */
+        await INSERT
+            .into(UserAuditReport)
+            .entries(entries);
+
+        console.log(
+            `${entries.length} User Audit records inserted into HANA`
+        );
+
+        /*
+         * Update sync status
+         */
+        await UPDATE(ReportSyncStatus)
+            .set({
+                lastSyncAt: timeTo,
+                lastRunAt: timeTo,
+                lastSyncStatus: "SUCCESS",
+                isRunning: false,
+                message:
+                    `Synchronization completed. ${entries.length} User Audit records processed.`
+            })
+            .where({
+                reportName: "USER_AUDIT"
+            });
+
+        return `${entries.length} User Audit records synchronized successfully`;
+
+    } catch (err) {
+
+        console.error(
+            "User Audit Log synchronization failed:",
+            err
+        );
+
+        /*
+         * Mark synchronization as FAILED
+         */
+        await UPDATE(ReportSyncStatus)
+            .set({
+                lastRunAt: formatAuditTimestamp(new Date()),
+                lastSyncStatus: "FAILED",
+                isRunning: false,
+                message: err.message
+            })
+            .where({
+                reportName: "USER_AUDIT"
+            });
+
+        throw err;
+    }
+});
+
     this.on("scheduledSyncRoleLogs", async (req) => {
         return await this.send("syncRoleLogs", {});
     });
     this.on("scheduledSyncServiceLogs", async (req) => {
         return await this.send("syncServiceLogs", {});
+    });
+    this.on("scheduledSyncConfigurationLogs", async (req) => {
+        return await this.send("syncConfigurationAuditLogs", {});
+    });
+    this.on("scheduledSyncUserLogs", async (req) => {
+        return await this.send("syncUserAuditLogs", {});
     });
 
     this.on("getServiceAuditStatus", async () => {
@@ -834,6 +1056,18 @@ module.exports = cds.service.impl(async function () {
             });
 
     });
+
+    this.on("getUserAuditStatus", async () => {
+        return await SELECT.one
+            .from(ReportSyncStatus)
+            .where({
+                reportName: "USER_AUDIT"
+            });
+
+    });
+
+
+
 
 
 });

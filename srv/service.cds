@@ -29,13 +29,15 @@ service auditLoggingAndReportingService {
         };
 
     //for sync btn
-    action   syncServiceLogs()             returns String;
-    action   syncRoleLogs()                returns String;
-    action syncConfigurationAuditLogs()    returns String;
-    action   clearEntitlements()           returns String;
-    function getServiceAuditStatus()       returns ReportSyncStatus;
-    function getRoleAudiStatus()           returns ReportSyncStatus;
-    function getConfigurationAuditStatus() returns ReportSyncStatus;
+    action   syncServiceLogs()                returns String;
+    action   syncRoleLogs()                   returns String;
+    action   syncConfigurationAuditLogs()     returns String;
+    action   syncUserAuditLogs()              returns String;
+    action   clearEntitlements()              returns String;
+    function getServiceAuditStatus()          returns ReportSyncStatus;
+    function getRoleAudiStatus()              returns ReportSyncStatus;
+    function getConfigurationAuditStatus()    returns ReportSyncStatus;
+    function getUserAuditStatus()             returns ReportSyncStatus;
 
 
     @readonly
@@ -246,8 +248,7 @@ service auditLoggingAndReportingService {
         group by
             changedBy;
 
-   
-    
+
     @readonly
     // @requires: 'Admin'
     entity BTPSubaccountVH        as
@@ -256,15 +257,25 @@ service auditLoggingAndReportingService {
         }
         group by
             subaccountName;
+
     @readonly
     // @requires: 'Admin'
     entity BTPServiceTypeVH {
         key code : String(30);
     }
+
     //job scheduling actions
     @requires: 'JobScheduler'
-    action   scheduledSyncRoleLogs()       returns String;
+    action   scheduledSyncRoleLogs()          returns String;
+
     @requires: 'JobScheduler'
     action   scheduledSyncServiceLogs()       returns String;
+
+    @requires: 'JobScheduler'
+    action   scheduledSyncConfigurationLogs() returns String;
+
+    @requires: 'JobScheduler'
+    action   scheduledSyncUserLogs()          returns String;
+
 
 }
