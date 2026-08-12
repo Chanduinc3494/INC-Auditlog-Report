@@ -611,19 +611,66 @@ module.exports = cds.service.impl(async function () {
         console.log("=================================================");
 
         // ---------------------------------------------------------
-        // 1. Get Audit Log Management token
+        // 1. Fetch already correctly mapped audit logs
         // ---------------------------------------------------------
 
-        const token = await authCsm.getToken();
+        const connections = await SELECT
+            .from(BTPConnection)
+            .where({
+                serviceType: "AUDIT_LOG",
+                active: true
+            });
 
-        console.log("Audit Log token received");
+        const timeFrom =
+            formatAuditTimestamp("1970-01-01T00:00:00Z");
 
+        const timeTo =
+            formatAuditTimestamp(new Date());
 
-        // ---------------------------------------------------------
-        // 2. Fetch already correctly mapped audit logs
-        // ---------------------------------------------------------
+        const entries = [];
 
-        const entries = await fetchUserAuditLogs(token);
+        for (const connection of connections) {
+
+            try {
+
+                const token =
+                    await authServiceManager.getToken(
+                        connection
+                    );
+
+                console.log(
+                    `Audit Log token received for ${connection.subaccountName || "Unknown"}`
+                );
+
+                const connectionEntries =
+                    await fetchUserAuditLogs(
+                        connection,
+                        token,
+                        timeFrom,
+                        timeTo
+                    );
+
+                entries.push(
+                    ...connectionEntries
+                );
+
+            } catch (connectionError) {
+
+                console.error(
+                    "-------------------------------------------------"
+                );
+
+                console.error(
+                    `Failed processing User Audit logs for ${connection.subaccountName || "Unknown"}`
+                );
+
+                console.error(
+                    connectionError.message
+                );
+
+                throw connectionError;
+            }
+        }
 
         console.log(
             `Fetched ${entries.length} mapped audit log records`
