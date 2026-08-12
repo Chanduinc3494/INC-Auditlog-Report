@@ -5,6 +5,16 @@ const authCsm = require("../lib/authCms");
 const { fetchEntitlementsLogs, fetchAccountDirectory } = require("../lib/cloudservice");
 const authServiceManager = require("../lib/authServiceMgr");
 const { fetchServiceInstances, fetchServiceOfferings, fetchServicePlans } = require("../lib/serviceAuditfns")
+const {
+    fetchConfigurationAuditLogs,
+    mapConfigurationAuditLog
+} = require("../lib/configurationAuditFns");
+
+const {
+    fetchUserAuditLogs
+} = require("../lib/userAuditfns");
+
+
 const { SELECT } = require("@sap/cds/lib/ql/cds-ql");
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
@@ -12,7 +22,8 @@ module.exports = cds.service.impl(async function () {
         UserAuditReport,
         ServiceAuditReport,
         BTPConnection,
-        ReportSyncStatus
+        ReportSyncStatus,
+        ConfigurationReport
     } = db.entities;
     try {
         const token = await authCsm.getToken();
@@ -685,123 +696,461 @@ module.exports = cds.service.impl(async function () {
 
 });
 
-this.on("syncConfigurationAuditLogs", async () => {
 
-    try {
+function formatAuditTimestamp(value) {
 
-        console.log("=================================================");
-        console.log("Starting Configuration Audit Log synchronization...");
-        console.log("=================================================");
+    const date =
+        new Date(value);
 
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
 
-        // ---------------------------------------------------------
-        // 1. Get Audit Log Management token
-        // ---------------------------------------------------------
+        throw new Error(
+            `Invalid audit timestamp: ${value}`
+        );
+    }
 
-        const token =
-            await authCsm.getToken();
+    return date.toISOString();
+}
 
-        console.log(
-            "Audit Log token received"
+// Sync Configuration Audit Logs
+this.on("syncConfigurationAuditLogs",  async () => {
+
+        let syncStatus =
+            await SELECT.one
+                .from(ReportSyncStatus)
+                .where({
+                    reportName: "CONFIGURATION_AUDIT"
+                });
+
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(
+            oneMonthAgo.getMonth() - 1
         );
 
 
-        // ---------------------------------------------------------
-        // 2. Fetch and map Configuration Audit Logs
-        // ---------------------------------------------------------
+        if (!syncStatus) {
 
-        const entries =
-            await fetchConfigurationAuditLogs(token);
+            await INSERT
+                .into(ReportSyncStatus)
+                .entries({
 
-        console.log(
-            `Fetched ${entries.length} mapped configuration audit records`
-        );
+                    reportName:
+                        "CONFIGURATION_AUDIT",
 
+                    lastSyncStatus:
+                        "RUNNING",
 
-        // ---------------------------------------------------------
-        // 3. No records
-        // ---------------------------------------------------------
+                    isRunning:
+                        true,
 
-        if (
-            !entries ||
-            entries.length === 0
-        ) {
+                    lastSyncAt:
+                        formatAuditTimestamp(
+                            oneMonthAgo
+                        )
+                });
 
-            console.log(
-                "No configuration audit logs found"
-            );
+        } else {
 
-            return "No configuration audit logs found";
+            await UPDATE(
+                ReportSyncStatus
+            )
+                .set({
 
+                    isRunning:
+                        true,
+
+                    lastSyncStatus:
+                        "RUNNING"
+
+                })
+                .where({
+
+                    reportName:
+                        "CONFIGURATION_AUDIT"
+
+                });
         }
 
 
-        // ---------------------------------------------------------
-        // 4. Debug first 5 records
-        // ---------------------------------------------------------
+        try {
 
-        entries
-            .slice(0, 5)
-            .forEach(
-                (entry, index) => {
+            console.log(
+                "================================================="
+            );
 
-                    console.log(
-                        `Final Configuration Audit Record ${index + 1}:`,
-                        JSON.stringify(
-                            entry,
-                            null,
-                            2
-                        )
-                    );
+            console.log(
+                "STARTING CONFIGURATION AUDIT LOG SYNCHRONIZATION"
+            );
 
-                }
+            console.log(
+                "================================================="
             );
 
 
-        // ---------------------------------------------------------
-        // 5. Delete old ConfigurationReport records
-        // ---------------------------------------------------------
+            /*
+             * =================================================
+             * GET ACTIVE AUDIT LOG CONNECTIONS
+             * =================================================
+             */
 
-        await DELETE
-            .from(ConfigurationReport);
+            const connections =
+                await SELECT
+                    .from(BTPConnection)
+                    .where({
 
-        console.log(
-            "Existing ConfigurationReport records deleted"
-        );
+                        serviceType:
+                            "AUDIT_LOG",
 
+                        active:
+                            true
 
-        // ---------------------------------------------------------
-        // 6. Insert new records
-        // ---------------------------------------------------------
-
-        await INSERT
-            .into(ConfigurationReport)
-            .entries(entries);
-
-        console.log(
-            `${entries.length} Configuration Audit records inserted into HANA`
-        );
+                    });
 
 
-        // ---------------------------------------------------------
-        // 7. Return success
-        // ---------------------------------------------------------
-
-        return `${entries.length} Configuration Audit logs synchronized successfully`;
+            console.log(
+                `Found ${connections.length} active BTP Audit Log connections.`
+            );
 
 
-    } catch (err) {
+            if (
+                !connections ||
+                connections.length === 0
+            ) {
 
-        console.error(
-            "Configuration Audit Log synchronization failed:",
-            err
-        );
+                await UPDATE(
+                    ReportSyncStatus
+                )
+                    .set({
 
-        throw err;
+                        lastSyncStatus:
+                            "SUCCESS",
 
+                        isRunning:
+                            false,
+
+                        lastSyncAt:
+                            formatAuditTimestamp(
+                                new Date()
+                            ),
+
+                        message:
+                            "No active Audit Log connections found."
+
+                    })
+                    .where({
+
+                        reportName:
+                            "CONFIGURATION_AUDIT"
+
+                    });
+
+
+                return "No active Audit Log connections found";
+            }
+
+
+            /*
+             * =================================================
+             * TIME RANGE
+             * =================================================
+             */
+
+            const timeTo =
+                formatAuditTimestamp(
+                    new Date()
+                );
+
+
+           const timeFrom =
+                syncStatus?.lastSyncAt
+                    ? formatAuditTimestamp(syncStatus.lastSyncAt)
+                    : formatAuditTimestamp("1970-01-01T00:00:00Z");
+
+
+            console.log(
+                `Configuration Audit Sync From: ${timeFrom}`
+            );
+
+            console.log(
+                `Configuration Audit Sync To: ${timeTo}`
+            );
+
+
+            /*
+             * =================================================
+             * FINAL RESULT ARRAY
+             * =================================================
+             */
+
+            const entries = [];
+
+
+            /*
+             * =================================================
+             * PROCESS EACH SUBACCOUNT
+             * =================================================
+             */
+
+            for (
+                const connection
+                of connections
+            ) {
+
+                console.log(
+                    "================================================="
+                );
+
+                console.log(
+                    `Processing subaccount: ${connection.subaccountName || "Unknown"}`
+                );
+
+                console.log(
+                    `API Base URL: ${connection.apiBaseUrl}`
+                );
+
+                console.log(
+                    "================================================="
+                );
+
+
+                const token =
+                    await authServiceManager.getToken(
+                        connection
+                    );
+
+
+                if (!token) {
+
+                    console.error(
+                        `Unable to get Audit Log token for ${connection.subaccountName}`
+                    );
+
+                    continue;
+                }
+
+
+                console.log(
+                    `Audit Log token received for ${connection.subaccountName}`
+                );
+
+
+                try {
+
+                    const configurationLogs =
+                        await fetchConfigurationAuditLogs(
+                            connection.apiBaseUrl,
+                            token,
+                            timeFrom,
+                            timeTo
+                        );
+
+
+                    console.log(
+                        `Fetched ${
+                            configurationLogs?.length || 0
+                        } configuration logs for ${
+                            connection.subaccountName
+                        }`
+                    );
+
+                    for (
+                        const log
+                        of configurationLogs || []
+                    ) {
+
+                        /*
+                         * configurationAuditFns.js
+                         * returns already mapped records.
+                         *
+                         * We only add the subaccount name here
+                         * if it isn't already present.
+                         */
+
+                        if (
+                            !log.subaccountName
+                        ) {
+
+                            log.subaccountName =
+                                connection.subaccountName || "";
+                        }
+
+
+                        entries.push(
+                            log
+                        );
+                    }
+
+                } catch (connectionError) {
+
+                    console.error(
+                        `Failed to fetch configuration audit logs for ${connection.subaccountName}:`,
+                        connectionError.message
+                    );
+
+                    /*
+                     * Continue processing other subaccounts.
+                     */
+
+                    continue;
+                }
+            }
+
+
+            console.log(
+                "================================================="
+            );
+
+            console.log(
+                `Total mapped Configuration Audit records: ${entries.length}`
+            );
+
+            console.log(
+                "================================================="
+            );
+
+
+            /*
+             * =================================================
+             * INSERT RECORDS
+             * =================================================
+             */
+
+            if (
+                entries.length > 0
+            ) {
+
+                await INSERT
+                    .into(
+                        ConfigurationReport
+                    )
+                    .entries(
+                        entries
+                    );
+
+
+                console.log(
+                    `${entries.length} Configuration Audit records inserted.`
+                );
+
+            } else {
+
+                console.log(
+                    "No new Configuration Audit records to insert."
+                );
+            }
+
+
+            /*
+             * =================================================
+             * UPDATE SYNC STATUS
+             * =================================================
+             */
+
+            await UPDATE(
+                ReportSyncStatus
+            )
+                .set({
+
+                    lastSyncAt:
+                        timeTo,
+
+                    lastSyncStatus:
+                        "SUCCESS",
+
+                    isRunning:
+                        false,
+
+                    message:
+                        `Synchronization completed. ${entries.length} Configuration Audit records processed.`
+
+                })
+                .where({
+
+                    reportName:
+                        "CONFIGURATION_AUDIT"
+
+                });
+
+
+            console.log(
+                "================================================="
+            );
+
+            console.log(
+                "CONFIGURATION AUDIT LOG SYNCHRONIZATION COMPLETED"
+            );
+
+            console.log(
+                "================================================="
+            );
+
+
+            return (
+                `Synchronization completed. ${entries.length} Configuration Audit records processed.`
+            );
+
+
+        } catch (err) {
+
+            console.error(
+                "================================================="
+            );
+
+            console.error(
+                "CONFIGURATION AUDIT LOG SYNCHRONIZATION FAILED"
+            );
+
+            console.error(
+                "================================================="
+            );
+
+            console.error(
+                err
+            );
+
+
+            /*
+             * =================================================
+             * UPDATE FAILED STATUS
+             * =================================================
+             */
+
+            await UPDATE(
+                ReportSyncStatus
+            )
+                .set({
+
+                    lastSyncAt:
+                        formatAuditTimestamp(
+                            new Date()
+                        ),
+
+                    lastSyncStatus:
+                        "FAILED",
+
+                    isRunning:
+                        false,
+
+                    message:
+                        err.message
+
+                })
+                .where({
+
+                    reportName:
+                        "CONFIGURATION_AUDIT"
+
+                });
+
+
+            throw err;
+        }
     }
-
-});
+);
 
 });
 

@@ -123,7 +123,7 @@ Content-Type: application/json
 GET http://localhost:4004/odata/v4/audit-logging-and-reporting/RoleAuditReports
 
 ### deleting role record from status table
-DELETE  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('95250876-b6fb-4672-ad65-8ba4e0a49443')
+DELETE  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('1eb110b4-b268-45c9-b75f-6a5db83b37ba')
 
 ###
 POST http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPServiceTypeVH
