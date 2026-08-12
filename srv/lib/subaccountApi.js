@@ -21,7 +21,10 @@ async function fetchSubaccount(baseUrl, token, subaccountIds) {
 
             subaccountMap.set(
                 subaccountId,
-                subaccount.subdomain
+                {
+                    subdomain: subaccount.subdomain,
+                    region: subaccount.region
+                }
             );
 
         } catch (err) {
@@ -34,7 +37,10 @@ async function fetchSubaccount(baseUrl, token, subaccountIds) {
             // Keep the ID as fallback
             subaccountMap.set(
                 subaccountId,
-                subaccountId
+                {
+                    subdomain: subaccountId,
+                    region: null
+                }
             );
         }
     }

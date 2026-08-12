@@ -332,10 +332,10 @@ module.exports = cds.service.impl(async function () {
                         );
 
                     // Replace fallback map with actual values
-                    for (const [subaccountId, subaccountName] of fetchedMap) {
+                    for (const [subaccountId, subaccountDetails] of fetchedMap) {
                         subaccountMap.set(
                             subaccountId,
-                            subaccountName
+                            subaccountDetails.subdomain
                         );
                     }
 
@@ -699,10 +699,10 @@ module.exports = cds.service.impl(async function () {
                         );
 
                     // Replace fallback map with actual values
-                    for (const [subaccountId, subaccountName] of fetchedMap) {
+                    for (const [subaccountId, subaccountDetails] of fetchedMap) {
                         subaccountMap.set(
                             subaccountId,
-                            subaccountName
+                            subaccountDetails
                         );
                     }
 
@@ -723,7 +723,13 @@ module.exports = cds.service.impl(async function () {
             const entries = [];
 
             for (const connection of connections) {
-                const subaccountName = subaccountMap.get(connection.subaccountId) || connection.subaccountId;
+                const subaccountDetails = subaccountMap.get(connection.subaccountId);
+                const subaccountName =
+                    subaccountDetails?.subdomain ||
+                    connection.subaccountId;
+
+                const region =
+                    subaccountDetails?.region || null;
                 const token = await oAuthManager.getToken(connection);
 
                 if (!token) {
@@ -744,9 +750,9 @@ module.exports = cds.service.impl(async function () {
                         for (const entry of mappedEntries) {
 
                             entry.subAccount = subaccountName;
+                            entry.region = region;
 
-                            entry.region =
-                                connection.region || "";
+                            
 
                             entries.push(entry);
                         }
@@ -761,7 +767,7 @@ module.exports = cds.service.impl(async function () {
             }
 
             if (entries.length > 0) {
-                console.log("ggs",entries.length);
+                console.log("ggs", entries.length);
 
                 await INSERT
                     .into(ConfigurationReport)
