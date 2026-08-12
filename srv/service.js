@@ -1,6 +1,7 @@
 const cds = require("@sap/cds");
 const audit = require("../lib/auditLog");
 const authCsm = require("../lib/authCms");
+const authLog = require("../lib/authLog");
 
 const { fetchEntitlementsLogs, fetchAccountDirectory } = require("../lib/cloudservice");
 const authServiceManager = require("../lib/authServiceMgr");
@@ -578,7 +579,7 @@ module.exports = cds.service.impl(async function () {
         return await SELECT.one
             .from(ReportSyncStatus)
             .where({
-                reportName: "CONFIGURATION"
+                reportName: "CONFIGURATION_AUDIT"
             });
 
     });
@@ -934,6 +935,7 @@ this.on("syncConfigurationAuditLogs",  async () => {
              */
 
             const entries = [];
+            const failedConnections = [];
 
 
             /*
@@ -987,13 +989,43 @@ this.on("syncConfigurationAuditLogs",  async () => {
 
                 try {
 
-                    const configurationLogs =
-                        await fetchConfigurationAuditLogs(
-                            connection.apiBaseUrl,
-                            token,
-                            timeFrom,
-                            timeTo
+                    let configurationLogs;
+
+                    try {
+
+                        configurationLogs =
+                            await fetchConfigurationAuditLogs(
+                                connection.apiBaseUrl,
+                                token,
+                                timeFrom,
+                                timeTo
+                            );
+
+                    } catch (auditLogError) {
+
+                        if (auditLogError.response?.status !== 401) {
+                            throw auditLogError;
+                        }
+
+                        console.warn(
+                            `Audit Log token from BTPConnection was rejected for ${connection.subaccountName}. Retrying with bound auditlog service credentials.`
                         );
+
+                        const boundAuditLogToken =
+                            await authLog.getToken();
+
+                        const boundAuditLogApiBaseUrl =
+                            authLog.getApiBaseUrl() ||
+                            connection.apiBaseUrl;
+
+                        configurationLogs =
+                            await fetchConfigurationAuditLogs(
+                                boundAuditLogApiBaseUrl,
+                                boundAuditLogToken,
+                                timeFrom,
+                                timeTo
+                            );
+                    }
 
 
                     console.log(
@@ -1033,6 +1065,10 @@ this.on("syncConfigurationAuditLogs",  async () => {
 
                 } catch (connectionError) {
 
+                    failedConnections.push(
+                        connection.subaccountName || "Unknown"
+                    );
+
                     console.error(
                         `Failed to fetch configuration audit logs for ${connection.subaccountName}:`,
                         connectionError.message
@@ -1044,6 +1080,15 @@ this.on("syncConfigurationAuditLogs",  async () => {
 
                     continue;
                 }
+            }
+
+            if (
+                failedConnections.length === connections.length
+            ) {
+
+                throw new Error(
+                    `Failed to fetch configuration audit logs for all configured subaccounts: ${failedConnections.join(", ")}`
+                );
             }
 
 

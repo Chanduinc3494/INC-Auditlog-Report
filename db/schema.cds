@@ -99,6 +99,7 @@ type ReportType  : String enum {
     USER_AUDIT;
     ROLE_AUDIT;
     CONFIGURATION;
+    CONFIGURATION_AUDIT;
     SERVICE_AUDIT;
     ENTITLEMENTS;
 };
