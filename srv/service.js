@@ -1057,6 +1057,14 @@ this.on("syncConfigurationAuditLogs",  async () => {
                                 connection.subaccountName || "";
                         }
 
+                        if (
+                            !log.subaccountName
+                        ) {
+
+                            log.subaccountName =
+                                connection.subaccountName || "";
+                        }
+
 
                         entries.push(
                             log

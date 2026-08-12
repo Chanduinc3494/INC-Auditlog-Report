@@ -8,6 +8,7 @@ annotate service.ConfigurationReport with {
     eventType       @(Common.Label : 'Event Type');
     btpService      @(Common.Label : 'BTP Service');
     subAccount      @(Common.Label : 'Subaccount');
+    subaccountName  @(Common.Label : 'Subaccount Name');
     region          @(Common.Label : 'Region');
     actionPerformed @(Common.Label : 'Action Performed');
     timestamp    @(Common.Label : 'Timestamp');
@@ -38,6 +39,20 @@ annotate service.ConfigurationReport with {
                     $Type : 'Common.ValueListParameterInOut',
                     LocalDataProperty : subAccount,
                     ValueListProperty : 'subAccount'
+                }
+            ]
+        }
+    );
+
+    subaccountName @(
+        Common.ValueListWithFixedValues : true,
+        Common.ValueList : {
+            CollectionPath : 'ConfigSubaccountNameVH',
+            Parameters : [
+                {
+                    $Type : 'Common.ValueListParameterInOut',
+                    LocalDataProperty : subaccountName,
+                    ValueListProperty : 'subaccountName'
                 }
             ]
         }
@@ -99,6 +114,7 @@ annotate service.ConfigurationReport with @(
     UI.SelectionFields : [
         system,
         subAccount,
+        subaccountName,
         userRole,
         eventType,
         userId,
@@ -146,6 +162,11 @@ annotate service.ConfigurationReport with @(
             $Type : 'UI.DataField',
             Value : subAccount,
             ![@HTML5.CssDefaults] : { width : '11%' }
+        },
+        {
+            $Type : 'UI.DataField',
+            Value : subaccountName,
+            ![@HTML5.CssDefaults] : { width : '13%' }
         },
         {
             $Type : 'UI.DataField',
