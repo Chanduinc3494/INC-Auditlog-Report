@@ -101,11 +101,26 @@ Content-Type: application/json
 {}
 
 ###
-GET http://localhost:4004/odata/v4/audit-logging-and-reporting/RoleAuditReports
+GET http://localhost:4004/odata/v4/audit-logging-and-reporting/ConfigurationReport
 
 ### deleting role record from status table
-DELETE  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('95250876-b6fb-4672-ad65-8ba4e0a49443')
+PUT  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('33333333-3333-4333-8333-333333333333')
+Content-Type: application/json
 
+{
+    "ID": "33333333-3333-4333-8333-333333333333",
+    "createdAt": null,
+    "createdBy": null,
+    "isRunning": false,
+    "lastRunAt": null,
+    "lastSyncAt": "1970-01-01T00:00:00Z",
+    "lastSyncBy": null,
+    "lastSyncStatus": "SUCCESS",
+    "message": "Not synchronized yet",
+    "modifiedAt": null,
+    "modifiedBy": null,
+    "reportName": "CONFIGURATION"
+}
 ###
 POST http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPServiceTypeVH
 Content-Type: application/json

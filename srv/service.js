@@ -9,7 +9,7 @@ const { SELECT,
 const { fetchRoleLogs } = require("./lib/roleAuditFunction");
 const { formatAuditTimestamp } = require("./lib/utils");
 const { fetchUsers } = require("./lib/cfUserApi");
-const {fetchConfigurationAuditLogs} = require("./lib/configurationAuditFns");
+const { fetchConfigurationAuditLogs, mapConfigurationAuditLog } = require("./lib/configurationAuditFns");
 const cfAuth = require("./lib/cfAuth");
 const { indexof } = require("@cap-js/hana/lib/cql-functions");
 const { fetchSubaccount } = require("./lib/subaccountApi");
@@ -603,10 +603,10 @@ module.exports = cds.service.impl(async function () {
 
 
     this.on("clearEntitlements", async () => {
-        await DELETE.from(RoleAuditReport);
+        await DELETE.from(ConfigurationReport);
         return "All ServiceAuditReport records deleted";
     });
-    
+
     // this.on("syncAuditLogs",async ()=>{
     //     const logs = await audit.fetchAuditLogs();
     //     await db.insert(UserAuditReport).enteries(logs);
@@ -616,14 +616,14 @@ module.exports = cds.service.impl(async function () {
     this.on("syncConfigurationAuditLogs", async () => {
         let syncStatus = await SELECT.one
             .from(ReportSyncStatus)
-            .where({ reportName: "CONFIGURATION_AUDIT" });
+            .where({ reportName: "CONFIGURATION" });
 
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
         if (!syncStatus) {
             await INSERT.into(ReportSyncStatus).entries({
-                reportName: "CONFIGURATION_AUDIT",
+                reportName: "CONFIGURATION",
                 lastSyncStatus: "RUNNING",
                 isRunning: true
             });
@@ -633,7 +633,7 @@ module.exports = cds.service.impl(async function () {
                     isRunning: true,
                     lastSyncStatus: "RUNNING"
                 })
-                .where({ reportName: "CONFIGURATION_AUDIT" });
+                .where({ reportName: "CONFIGURATION" });
         }
 
         try {
@@ -657,7 +657,7 @@ module.exports = cds.service.impl(async function () {
                 return "No active Audit Log connections found";
             }
 
-             const subaccountIds = [
+            const subaccountIds = [
                 ...new Set(
                     connections
                         .map(connection => connection.subaccountId)
@@ -740,11 +740,16 @@ module.exports = cds.service.impl(async function () {
                         );
 
                     for (const log of configurationLogs || []) {
-                        if (!log.subaccountName) {
-                            log.subaccountName = subaccountName;
-                        }
+                        const mappedEntries = mapConfigurationAuditLog(log);
+                        for (const entry of mappedEntries) {
 
-                        entries.push(log);
+                            entry.subAccount = subaccountName;
+
+                            entry.region =
+                                connection.region || "";
+
+                            entries.push(entry);
+                        }
                     }
                 } catch (connectionError) {
                     console.error(
@@ -756,6 +761,8 @@ module.exports = cds.service.impl(async function () {
             }
 
             if (entries.length > 0) {
+                console.log("ggs",entries.length);
+
                 await INSERT
                     .into(ConfigurationReport)
                     .entries(entries);
@@ -764,13 +771,13 @@ module.exports = cds.service.impl(async function () {
             await UPDATE(ReportSyncStatus)
                 .set({
                     lastSyncAt: timeTo,
-                    lastRunAt:timeTo,
+                    lastRunAt: timeTo,
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
                     message:
                         `Synchronization completed. ${entries.length} Configuration Audit records processed.`
                 })
-                .where({ reportName: "CONFIGURATION_AUDIT" });
+                .where({ reportName: "CONFIGURATION" });
 
             return `Synchronization completed. ${entries.length} Configuration Audit records processed.`;
 
@@ -782,7 +789,7 @@ module.exports = cds.service.impl(async function () {
                     isRunning: false,
                     message: err.message
                 })
-                .where({ reportName: "CONFIGURATION_AUDIT" });
+                .where({ reportName: "CONFIGURATION" });
 
             throw err;
         }

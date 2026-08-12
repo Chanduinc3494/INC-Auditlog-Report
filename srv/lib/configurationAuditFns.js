@@ -1,19 +1,471 @@
+// const axios = require("axios");
+
+
+// /**
+//  * ============================================================
+//  * FETCH CONFIGURATION AUDIT LOGS
+//  * ============================================================
+//  *
+//  * @param {string} apiBaseUrl
+//  * @param {string} token
+//  * @param {string} timeFrom
+//  * @param {string} timeTo
+//  *
+//  * @returns {Array}
+//  * ============================================================
+//  */
+
+// async function fetchConfigurationAuditLogs(
+//     apiBaseUrl,
+//     token,
+//     timeFrom,
+//     timeTo
+// ) {
+
+
+//     if (!apiBaseUrl) {
+//         throw new Error(
+//             "Audit Log API base URL is missing."
+//         );
+//     }
+
+
+//     if (!token) {
+//         throw new Error(
+//             "Audit Log access token is missing."
+//         );
+//     }
+
+//     const baseUrl =
+//         String(apiBaseUrl)
+//             .replace(/\/+$/, "");
+
+
+//     const url =
+//         `${baseUrl}/auditlog/v2/auditlogrecords`;
+
+//     const allLogs = [];
+//     let page = 1;
+//     let handle = null;
+
+
+//     try {
+
+//         while (true) {
+//             const params = {};
+
+//             if (timeFrom) {
+//                 params.time_from =
+//                     timeFrom;
+//             }
+//             if (timeTo) {
+
+//                 params.time_to =
+//                     timeTo;
+//             }
+//             params.category =
+//                 "audit.configuration";
+
+//             if (handle) {
+
+//                 params.handle =
+//                     handle;
+//             }
+
+
+//             console.log(
+//                 "Request params:",
+//                 params
+//             );
+
+
+//             /*
+//              * ====================================================
+//              * API CALL
+//              * ====================================================
+//              */
+
+//             const response =
+//                 await axios.get(
+//                     url,
+//                     {
+
+//                         params,
+
+//                         headers: {
+
+//                             Authorization:
+//                                 `Bearer ${token}`,
+
+//                             Accept:
+//                                 "application/json"
+
+//                         }
+//                     }
+//                 );
+
+
+//             /*
+//              * ====================================================
+//              * RESPONSE
+//              * ====================================================
+//              */
+
+//             const data =
+//                 response.data;
+
+
+
+//             console.log(
+//                 `Configuration Audit API status: ${response.status}`
+//             );
+
+
+//             /*
+//              * ====================================================
+//              * NORMALIZE RESPONSE
+//              * ====================================================
+//              */
+
+//             let records = [];
+
+
+//             if (
+//                 Array.isArray(data)
+//             ) {
+
+//                 records =
+//                     data;
+
+//             } else if (
+//                 Array.isArray(
+//                     data?.value
+//                 )
+//             ) {
+
+//                 records =
+//                     data.value;
+
+//             } else if (
+//                 Array.isArray(
+//                     data?.results
+//                 )
+//             ) {
+
+//                 records =
+//                     data.results;
+
+//             } else if (
+//                 Array.isArray(
+//                     data?.auditLogRecords
+//                 )
+//             ) {
+
+//                 records =
+//                     data.auditLogRecords;
+//             }
+
+
+//             console.log(
+//                 `Records received on page ${page}: ${records.length}`
+//             );
+
+
+//             /*
+//              * ====================================================
+//              * MAP RECORDS
+//              * ====================================================
+//              */
+
+//             for (
+//                 const log
+//                 of records
+//             ) {
+
+//                 const entry =
+//                     mapConfigurationAuditLog(
+//                         log
+//                     );
+
+
+//                 if (
+//                     entry
+//                 ) {
+
+//                     allLogs.push(
+//                         entry
+//                     );
+//                 }
+//             }
+
+
+//             /*
+//              * ====================================================
+//              * PAGINATION HANDLE
+//              * ====================================================
+//              *
+//              * SAP Audit Log Retrieval API can return a handle
+//              * for the next chunk.
+//              * ====================================================
+//              */
+
+//             const nextHandle =
+//                 response.headers?.handle ||
+//                 response.headers?.["x-handle"] ||
+//                 data?.handle;
+
+
+//             if (
+//                 !nextHandle ||
+//                 records.length === 0
+//             ) {
+
+//                 break;
+//             }
+
+
+//             handle =
+//                 nextHandle;
+
+//             page++;
+//         }
+
+
+//     } catch (error) {
+
+//         console.error(
+//             "================================================="
+//         );
+
+//         console.error(
+//             "CONFIGURATION AUDIT API ERROR"
+//         );
+
+//         console.error(
+//             "================================================="
+//         );
+
+
+//         console.error(
+//             "HTTP status:",
+//             error.response?.status
+//         );
+
+
+//         console.error(
+//             "Response:",
+//             JSON.stringify(
+//                 error.response?.data
+//             )
+//         );
+
+
+//         console.error(
+//             "Error:",
+//             error.message
+//         );
+
+
+//         throw error;
+//     }
+
+
+//     console.log(
+//         "================================================="
+//     );
+
+//     console.log(
+//         `TOTAL CONFIGURATION AUDIT LOGS: ${allLogs.length}`
+//     );
+
+//     console.log(
+//         "================================================="
+//     );
+
+
+//     return allLogs;
+// }
+
+
+// /**
+//  * ============================================================
+//  * MAP CONFIGURATION AUDIT LOG
+//  * ============================================================
+//  */
+// function getBtpService(object) {
+//     const tableName = String(
+//         object.tableName ||
+//         object.type ||
+//         object.table ||
+//         ""
+//     ).toLowerCase();
+
+//     if (tableName === "xsrolecollections") {
+//         return "Role Collection";
+//     }
+
+//     if (tableName === "xsrolecollection2role") {
+//         return "Role Assignment";
+//     }
+
+//     if (tableName === "xs_rolecollection2user") {
+//         return "User Role Assignment";
+//     }
+
+//     if (tableName === "users") {
+//         return "User";
+//     }
+
+//     if (
+//         tableName === "tenant provision" ||
+//         tableName === "tenant de-provision"
+//     ) {
+//         return "Tenant";
+//     }
+
+//     if (
+//         tableName.includes("rootsubscritpioncustomauditingentitylistener") ||
+//         tableName.includes("rootsubscriptioncustomauditingentitylistener")
+//     ) {
+//         return "Subscription";
+//     }
+
+//     return object.tableName ||
+//         object.type ||
+//         object.table ||
+//         "Configuration";
+// }
+
+// function mapConfigurationAuditLog(log) {
+//     if (!log) return [];
+
+//     let message = log.message;
+
+//     try {
+//         if (typeof message === "string") {
+//             message = JSON.parse(message);
+//         }
+//     } catch {
+//         return [];
+//     }
+
+//     if (!message) return [];
+
+//     const object = message.object?.id || message.object || {};
+//     const attributes = Array.isArray(message.attributes)
+//         ? message.attributes
+//         : [];
+
+//     const userId = log.user
+//         ? String(log.user).split("/").pop()
+//         : "";
+
+//     const btpService = getBtpService(object);
+
+//     const crudType = String(
+//         object.crudType ||
+//         object.operation ||
+//         ""
+//     ).toUpperCase();
+
+//     const timestamp =
+//         message.time ||
+//         log.time ||
+//         null;
+
+//     const base = {
+//         system: "BTP",
+//         userId,
+//         userRole: "",
+//         btpService,
+//         timestamp
+//     };
+
+//     if (crudType === "CREATE") {
+//         return [{
+//             ...base,
+//             eventType: "CREATE",
+//             actionPerformed:
+//                 `Created ${btpService}`
+//         }];
+//     }
+
+//     if (crudType === "DELETE") {
+//         return [{
+//             ...base,
+//             eventType: "DELETE",
+//             actionPerformed:
+//                 `Deleted ${btpService}`
+//         }];
+//     }
+
+//     if (crudType === "UPDATE") {
+//         const entries = [];
+
+//         for (const attr of attributes) {
+//             if (!attr) continue;
+
+//             const oldValue = attr.old ?? "";
+//             const newValue = attr.new ?? "";
+
+//             if (
+//                 String(oldValue) ===
+//                 String(newValue)
+//             ) {
+//                 continue;
+//             }
+
+//             entries.push({
+//                 ...base,
+//                 eventType: "UPDATE",
+//                 actionPerformed:
+//                     `${attr.name}: ${oldValue} → ${newValue}`
+//             });
+//         }
+
+//         return entries;
+//     }
+
+//     if (btpService === "Tenant") {
+//         const eventType =
+//             String(object.type || "").toLowerCase()
+//                 .includes("de-provision")
+//                 ? "DE-PROVISION"
+//                 : "PROVISION";
+
+//         return [{
+//             ...base,
+//             eventType,
+//             actionPerformed:
+//                 eventType === "PROVISION"
+//                     ? "Tenant provisioned"
+//                     : "Tenant de-provisioned"
+//         }];
+//     }
+
+//     if (attributes.length > 0) {
+//         return attributes.map(attr => ({
+//             ...base,
+//             eventType: btpService,
+//             actionPerformed:
+//                 `${attr.name}: ${attr.old ?? ""} → ${attr.new ?? ""}`
+//         }));
+//     }
+
+//     return [{
+//         ...base,
+//         eventType: btpService,
+//         actionPerformed: `${btpService} changed`
+//     }];
+// }
+
+
+// module.exports = {
+
+//     fetchConfigurationAuditLogs
+
+// };
 const axios = require("axios");
-
-
-/**
- * ============================================================
- * FETCH CONFIGURATION AUDIT LOGS
- * ============================================================
- *
- * @param {string} apiBaseUrl
- * @param {string} token
- * @param {string} timeFrom
- * @param {string} timeTo
- *
- * @returns {Array}
- * ============================================================
- */
 
 async function fetchConfigurationAuditLogs(
     apiBaseUrl,
@@ -21,610 +473,469 @@ async function fetchConfigurationAuditLogs(
     timeFrom,
     timeTo
 ) {
-
-
     if (!apiBaseUrl) {
-        throw new Error(
-            "Audit Log API base URL is missing."
-        );
+        throw new Error("Audit Log API base URL is missing.");
     }
-
 
     if (!token) {
-        throw new Error(
-            "Audit Log access token is missing."
-        );
+        throw new Error("Audit Log access token is missing.");
     }
 
-    const baseUrl =
-        String(apiBaseUrl)
-            .replace(/\/+$/, "");
-
-
-    const url =
-        `${baseUrl}/auditlog/v2/auditlogrecords`;
+    const baseUrl = String(apiBaseUrl).replace(/\/+$/, "");
+    const url = `${baseUrl}/auditlog/v2/auditlogrecords`;
 
     const allLogs = [];
     let page = 1;
     let handle = null;
 
-
     try {
-
         while (true) {
-            const params = {};
+            const params = {
+                category: "audit.configuration"
+            };
 
             if (timeFrom) {
-                params.time_from =
-                    timeFrom;
+                params.time_from = timeFrom;
             }
-            if (timeTo) {
 
-                params.time_to =
-                    timeTo;
+            if (timeTo) {
+                params.time_to = timeTo;
             }
-            params.category =
-                "audit.configuration";
 
             if (handle) {
-
-                params.handle =
-                    handle;
+                params.handle = handle;
             }
 
+            const response = await axios.get(url, {
+                params,
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json"
+                }
+            });
 
-            console.log(
-                "Request params:",
-                params
-            );
-
-
-            /*
-             * ====================================================
-             * API CALL
-             * ====================================================
-             */
-
-            const response =
-                await axios.get(
-                    url,
-                    {
-
-                        params,
-
-                        headers: {
-
-                            Authorization:
-                                `Bearer ${token}`,
-
-                            Accept:
-                                "application/json"
-
-                        },
-
-                        timeout:
-                            60000
-                    }
-                );
-
-
-            /*
-             * ====================================================
-             * RESPONSE
-             * ====================================================
-             */
-
-            const data =
-                response.data;
-
-
-            console.log(
-                `Configuration Audit API status: ${response.status}`
-            );
-
-
-            /*
-             * ====================================================
-             * NORMALIZE RESPONSE
-             * ====================================================
-             */
-
+            const data = response.data;
             let records = [];
 
-
-            if (
-                Array.isArray(data)
-            ) {
-
-                records =
-                    data;
-
-            } else if (
-                Array.isArray(
-                    data?.value
-                )
-            ) {
-
-                records =
-                    data.value;
-
-            } else if (
-                Array.isArray(
-                    data?.results
-                )
-            ) {
-
-                records =
-                    data.results;
-
-            } else if (
-                Array.isArray(
-                    data?.auditLogRecords
-                )
-            ) {
-
-                records =
-                    data.auditLogRecords;
+            if (Array.isArray(data)) {
+                records = data;
+            } else if (Array.isArray(data?.value)) {
+                records = data.value;
+            } else if (Array.isArray(data?.results)) {
+                records = data.results;
+            } else if (Array.isArray(data?.auditLogRecords)) {
+                records = data.auditLogRecords;
             }
 
-
-            console.log(
-                `Records received on page ${page}: ${records.length}`
-            );
-
-
-            /*
-             * ====================================================
-             * MAP RECORDS
-             * ====================================================
-             */
-
-            for (
-                const log
-                of records
-            ) {
-
-                const entry =
-                    mapConfigurationAuditLog(
-                        log
-                    );
-
-
-                if (
-                    entry
-                ) {
-
-                    allLogs.push(
-                        entry
-                    );
-                }
-            }
-
-
-            /*
-             * ====================================================
-             * PAGINATION HANDLE
-             * ====================================================
-             *
-             * SAP Audit Log Retrieval API can return a handle
-             * for the next chunk.
-             * ====================================================
-             */
+            allLogs.push(...records);
 
             const nextHandle =
                 response.headers?.handle ||
                 response.headers?.["x-handle"] ||
                 data?.handle;
 
-
-            if (
-                !nextHandle ||
-                records.length === 0
-            ) {
-
+            if (!nextHandle || records.length === 0) {
                 break;
             }
 
-
-            handle =
-                nextHandle;
-
+            handle = nextHandle;
             page++;
         }
 
+        return allLogs;
 
     } catch (error) {
-
         console.error(
-            "================================================="
+            "Configuration Audit API Error:",
+            error.response?.data || error.message
         );
-
-        console.error(
-            "CONFIGURATION AUDIT API ERROR"
-        );
-
-        console.error(
-            "================================================="
-        );
-
-
-        console.error(
-            "HTTP status:",
-            error.response?.status
-        );
-
-
-        console.error(
-            "Response:",
-            JSON.stringify(
-                error.response?.data
-            )
-        );
-
-
-        console.error(
-            "Error:",
-            error.message
-        );
-
 
         throw error;
     }
+}
+function getBtpService(object) {
+    const tableName = String(
+        object.tableName ||
+        object.type ||
+        object.table ||
+        ""
+    ).toLowerCase();
 
+    if (tableName === "xsrolecollections") {
+        return "Role Collection";
+    }
 
-    console.log(
-        "================================================="
+    if (tableName === "xsrolecollection2role") {
+        return "Role Assignment";
+    }
+
+    if (tableName === "xs_rolecollection2user") {
+        return "User Role Assignment";
+    }
+
+    if (tableName === "users") {
+        return "User";
+    }
+
+    if (
+        tableName === "tenant provision" ||
+        tableName === "tenant de-provision"
+    ) {
+        return "Tenant";
+    }
+
+    if (
+        tableName.includes("rootsubscritpioncustomauditingentitylistener") ||
+        tableName.includes("rootsubscriptioncustomauditingentitylistener")
+    ) {
+        return "Subscription";
+    }
+
+    return (
+        object.tableName ||
+        object.type ||
+        object.table ||
+        "Configuration"
     );
-
-    console.log(
-        `TOTAL CONFIGURATION AUDIT LOGS: ${allLogs.length}`
-    );
-
-    console.log(
-        "================================================="
-    );
-
-
-    return allLogs;
 }
 
-
-/**
- * ============================================================
- * MAP CONFIGURATION AUDIT LOG
- * ============================================================
- */
-
-function mapConfigurationAuditLog(
-    log
+function getActionPerformed(
+    btpService,
+    crudType,
+    attr,
+    object
 ) {
+    const field = String(
+        attr?.name || ""
+    ).toLowerCase();
 
-    if (!log) {
+    if (btpService === "Role Collection") {
 
-        return null;
-    }
+        const roleCollection =
+            object?.name ||
+            "Unknown Role Collection";
 
-
-    /*
-     * ============================================================
-     * MESSAGE
-     * ============================================================
-     */
-
-    let message =
-        log.message;
-
-
-    try {
-
-        if (
-            typeof message === "string"
-        ) {
-
-            message =
-                JSON.parse(
-                    message
-                );
+        if (crudType === "CREATE") {
+            return `Role Collection "${roleCollection}" created`;
         }
 
-    } catch (error) {
+        if (crudType === "DELETE") {
+            return `Role Collection "${roleCollection}" deleted`;
+        }
 
-        console.warn(
-            "Unable to parse audit log message:",
-            error.message
-        );
+        if (crudType === "UPDATE") {
 
-        return null;
+            if (field === "description") {
+                return `Role Collection "${roleCollection}" description updated`;
+            }
+
+            if (field === "creation_type") {
+                return `Role Collection "${roleCollection}" creation type updated`;
+            }
+
+            return `Role Collection "${roleCollection}" ${field || "configuration"} updated`;
+        }
     }
 
+    if (btpService === "Role Assignment") {
+
+        const role =
+            object?.role_name ||
+            "Unknown Role";
+
+        const roleCollection =
+            object?.rolecollection_name ||
+            "Unknown Role Collection";
+
+        if (crudType === "CREATE") {
+            return `Role "${role}" assigned to Role Collection "${roleCollection}"`;
+        }
+
+        if (crudType === "DELETE") {
+            return `Role "${role}" removed from Role Collection "${roleCollection}"`;
+        }
+
+        if (crudType === "UPDATE") {
+            return `Role "${role}" assignment updated in Role Collection "${roleCollection}"`;
+        }
+    }
+
+    if (btpService === "User Role Assignment") {
+
+        const roleCollection =
+            object?.rolecollection_name ||
+            "Unknown Role Collection";
+
+        const user =
+            object?.user_name ||
+            object?.user ||
+            "User";
+
+        if (crudType === "CREATE") {
+            return `${user} added to Role Collection "${roleCollection}"`;
+        }
+
+        if (crudType === "DELETE") {
+            return `${user} removed from Role Collection "${roleCollection}"`;
+        }
+
+        if (crudType === "UPDATE") {
+            return `${user} role assignment updated in Role Collection "${roleCollection}"`;
+        }
+    }
+
+    if (btpService === "User") {
+
+        if (crudType === "CREATE") {
+            return "User created";
+        }
+
+        if (crudType === "DELETE") {
+            return "User deleted";
+        }
+
+        if (crudType === "UPDATE") {
+
+            if (field === "email") {
+                return "User email updated";
+            }
+
+            if (field === "username") {
+                return "Username updated";
+            }
+
+            if (field === "first_name") {
+                return "User first name updated";
+            }
+
+            if (field === "last_name") {
+                return "User last name updated";
+            }
+
+            return `User ${field || "details"} updated`;
+        }
+    }
+
+    if (btpService === "Subscription") {
+
+        if (crudType === "CREATE") {
+            return "Subscription created";
+        }
+
+        if (crudType === "DELETE") {
+            return "Subscription deleted";
+        }
+
+        if (crudType === "UPDATE") {
+            return "Subscription updated";
+        }
+    }
+
+    if (btpService === "Tenant") {
+
+        if (crudType === "PROVISION") {
+            return "Tenant provisioned";
+        }
+
+        if (crudType === "DE-PROVISION") {
+            return "Tenant de-provisioned";
+        }
+    }
+
+    if (crudType === "CREATE") {
+        return `${btpService} created`;
+    }
+
+    if (crudType === "DELETE") {
+        return `${btpService} deleted`;
+    }
+
+    if (crudType === "UPDATE") {
+        return `${btpService} ${field || "configuration"} updated`;
+    }
+
+    return `${btpService} configuration changed`;
+}
+
+function mapConfigurationAuditLog(log) {
+    if (!log) {
+        return [];
+    }
+
+    let message = log.message;
+
+    try {
+        if (typeof message === "string") {
+            message = JSON.parse(message);
+        }
+    } catch {
+        return [];
+    }
 
     if (!message) {
-
-        return null;
+        return [];
     }
-
-
-    /*
-     * ============================================================
-     * OBJECT
-     * ============================================================
-     */
 
     const object =
         message.object?.id ||
         message.object ||
         {};
 
+    const attributes =
+        Array.isArray(message.attributes)
+            ? message.attributes
+            : [];
 
-    /*
-     * ============================================================
-     * USER
-     * ============================================================
-     */
-
-    const changedByUserId =
+    const userId =
         log.user
-            ? String(
-                log.user
-            )
+            ? String(log.user)
                 .split("/")
                 .pop()
             : "";
 
-
-    /*
-     * ============================================================
-     * STATUS
-     * ============================================================
-     */
-
-    const status =
-        message.success === false
-            ? "Failure"
-            : "Success";
-
-
-    /*
-     * ============================================================
-     * COMMON INFORMATION
-     * ============================================================
-     */
-
-    const objectName =
-        object.name ||
-        object.id ||
-        object.objectName ||
-        "";
-
-
-    const tableName =
-        object.tableName ||
-        object.type ||
-        object.table ||
-        "";
-
+    const btpService =
+        getBtpService(object);
 
     const crudType =
         String(
             object.crudType ||
             object.operation ||
-            log.crudType ||
             ""
-        )
-            .toUpperCase();
+        ).toUpperCase();
 
+    const timestamp =
+        message.time ||
+        log.time ||
+        null;
 
-    /*
-     * ============================================================
-     * HANDLE UPDATE ATTRIBUTES
-     * ============================================================
-     */
+    const base = {
+        system: "BTP",
+        userId,
+        userRole: "",
+        btpService,
+        timestamp
+    };
 
-    if (
-        crudType === "UPDATE" &&
-        Array.isArray(
-            message.attributes
-        )
-    ) {
+    if (crudType === "CREATE") {
 
-        /*
-         * Return multiple records for changed fields.
-         */
+        return [{
+            ...base,
 
-        const updatedEntries = [];
+            eventType: "CREATE",
 
+            actionPerformed:
+                getActionPerformed(
+                    btpService,
+                    "CREATE",
+                    null,
+                    object
+                )
+        }];
+    }
 
-        for (
-            const attr
-            of message.attributes
-        ) {
+    if (crudType === "DELETE") {
+
+        return [{
+            ...base,
+
+            eventType: "DELETE",
+
+            actionPerformed:
+                getActionPerformed(
+                    btpService,
+                    "DELETE",
+                    null,
+                    object
+                )
+        }];
+    }
+
+    if (crudType === "UPDATE") {
+
+        const entries = [];
+
+        for (const attr of attributes) {
 
             if (!attr) {
-
                 continue;
             }
 
+            const oldValue =
+                attr.old ?? "";
 
-            /*
-             * Ignore unchanged attributes.
-             */
+            const newValue =
+                attr.new ?? "";
 
             if (
-                String(
-                    attr.old ?? ""
-                ) ===
-                String(
-                    attr.new ?? ""
-                )
+                String(oldValue) ===
+                String(newValue)
             ) {
-
                 continue;
             }
 
+            entries.push({
 
-            updatedEntries.push({
+                ...base,
 
-                system:
-                    "BTP",
+                eventType: "UPDATE",
 
-                roleCollection:
-                    objectName,
-
-                event:
-                    "Update",
-
-                timestamp:
-                    message.time ||
-                    log.time ||
-                    "",
-
-                changedByUserId:
-                    changedByUserId,
-
-                userRole:
-                    "",
-
-                fieldChanged:
-                    attr.name ||
-                    "",
-
-                oldValue:
-                    attr.old ??
-                    "",
-
-                newValue:
-                    attr.new ??
-                    "",
-
-                status:
-                    status
+                actionPerformed:
+                    getActionPerformed(
+                        btpService,
+                        "UPDATE",
+                        attr,
+                        object
+                    )
             });
         }
 
-
-        /*
-         * This function is designed around the existing
-         * ConfigurationReport schema.
-         *
-         * If multiple update attributes exist, return the
-         * first one here. If your schema requires every
-         * attribute, change the caller to flatten arrays.
-         */
-
-        return updatedEntries.length > 0
-            ? updatedEntries[0]
-            : null;
+        return entries;
     }
 
+    if (btpService === "Tenant") {
 
-    /*
-     * ============================================================
-     * CREATE
-     * ============================================================
-     */
+        const isDeProvision =
+            String(
+                object.type || ""
+            )
+                .toLowerCase()
+                .includes("de-provision");
 
-    if (
-        crudType === "CREATE"
-    ) {
+        return [{
 
-        return {
+            ...base,
 
-            system:
-                "BTP",
+            eventType:
+                isDeProvision
+                    ? "DE-PROVISION"
+                    : "PROVISION",
 
-            roleCollection:
-                objectName,
-
-            event:
-                "Create",
-
-            timestamp:
-                message.time ||
-                log.time ||
-                "",
-
-            changedByUserId:
-                changedByUserId,
-
-            userRole:
-                "",
-
-            fieldChanged:
-                tableName ||
-                "Configuration",
-
-            oldValue:
-                "Not Exists",
-
-            newValue:
-                objectName,
-
-            status:
-                status
-        };
+            actionPerformed:
+                isDeProvision
+                    ? "Tenant de-provisioned"
+                    : "Tenant provisioned"
+        }];
     }
 
+    return [{
 
-    /*
-     * ============================================================
-     * DELETE
-     * ============================================================
-     */
+        ...base,
 
-    if (
-        crudType === "DELETE"
-    ) {
+        eventType:
+            crudType || "CHANGE",
 
-        return {
-
-            system:
-                "BTP",
-
-            roleCollection:
-                objectName,
-
-            event:
-                "Delete",
-
-            timestamp:
-                message.time ||
-                log.time ||
-                "",
-
-            changedByUserId:
-                changedByUserId,
-
-            userRole:
-                "",
-
-            fieldChanged:
-                tableName ||
-                "Configuration",
-
-            oldValue:
-                objectName,
-
-            newValue:
-                "Deleted",
-
-            status:
-                status
-        };
-    }
-
-
-    /*
-     * ============================================================
-     * UNKNOWN EVENT
-     * ============================================================
-     */
-
-    return null;
+        actionPerformed:
+            getActionPerformed(
+                btpService,
+                crudType || "CHANGE",
+                null,
+                object
+            )
+    }];
 }
 
 
 module.exports = {
-
-    fetchConfigurationAuditLogs
-
+    fetchConfigurationAuditLogs,
+    mapConfigurationAuditLog
 };
