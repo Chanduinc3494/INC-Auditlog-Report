@@ -136,13 +136,13 @@
                       "press": "configurationreport.ext.controller.LastSyncBtn.lastSyncFunction",
                       "visible": true,
                       "enabled": true,
-                      "text": "Last Sync  info"
+                      "text": "{i18n>lastSyncInfo}"
                     },
                     "SyncBtn": {
                       "press": "configurationreport.ext.controller.SyncBtn.SyncBtnFunction",
                       "visible": true,
                       "enabled": true,
-                      "text": "Sync"
+                      "text": "{i18n>sync}"
                     }
                   }
                 }

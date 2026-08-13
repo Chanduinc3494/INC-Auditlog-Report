@@ -136,13 +136,13 @@
                       "press": "rolesauditreport.ext.controller.LastSync.onLastSyncPress",
                       "visible": true,
                       "enabled": true,
-                      "text": "Last Sync"
+                      "text": "{i18n>lastSync}"
                     },
                     "SyncBtn": {
                       "press": "rolesauditreport.ext.controller.SyncBtn.SyncRoleLogs",
                       "visible": true,
                       "enabled": true,
-                      "text": "Sync",
+                      "text": "{i18n>sync}",
                       "position": {
                         "placement": "After",
                         "anchor": "lastSync"

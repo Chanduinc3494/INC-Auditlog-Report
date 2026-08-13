@@ -28,8 +28,10 @@
     "crossNavigation": {
       "inbounds": {
         "userauditreport-display": {
-          "semanticObject": "userauditreport",
+          "semanticObject": "",
           "action": "display",
+          "title": "{{serviceconnection-display.flpTitle}}",
+          "icon": "sap-icon://user-settings",
           "signature": {
             "parameters": {},
             "additionalParameters": "allowed"

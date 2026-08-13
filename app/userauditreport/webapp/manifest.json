@@ -28,7 +28,7 @@
     "crossNavigation": {
       "inbounds": {
         "useraudit-display": {
-          "semanticObject": "useraudit",
+          "semanticObject": "serviceconnection",
           "action": "display",
           "title": "{{useraudit-display.flpTitle}}",
           "icon": "sap-icon://user-settings",
@@ -136,13 +136,13 @@
                       "press": "userauditreport.ext.controller.LastSynBtn.lastSyncFunction",
                       "visible": true,
                       "enabled": true,
-                      "text": "Last Sync Info"
+                      "text": "{i18n>lastSyncInfo}"
                     },
                     "SyncBtn": {
                       "press": "userauditreport.ext.controller.SyncBtn.SyncBtnFunction",
                       "visible": true,
                       "enabled": true,
-                      "text": "Sync"
+                      "text": "{i18n>sync}"
                     }
                   }
                 }

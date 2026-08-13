@@ -5,52 +5,52 @@ annotate service.BTPConnection with @(
         Data : [
             {
                 $Type : 'UI.DataField',
-                Label : 'Subaccount Id',
+                Label : '{i18n>SubaccountId}',
                 Value : subaccountId,
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Subaccount Name',
+                Label : '{i18n>Subaccountname}',
                 Value : subaccountName,
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Token Url',
+                Label : '{i18n>Tokenurl}',
                 Value : tokenUrl,
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'ApiBase Url',
+                Label : '{i18n>Apibaseurl}',
                 Value : apiBaseUrl,
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Client Id',
+                Label : '{i18n>ClientId}',
                 Value : clientId,
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Client Secret',
+                Label : '{i18n>ClientSecret}',
                 Value : clientSecret,
             },
             {
                 $Type : 'UI.DataField',
                 Value : username,
-                Label : 'CF username',
+                Label : '{i18n>CfUsername}',
             },
             {
                 $Type : 'UI.DataField',
                 Value : password,
-                Label : 'CF password',
+                Label : '{i18n>CfPassword}',
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Service Type',
+                Label : '{i18n>Servicetype}',
                 Value : serviceType,
             },
             {
                 $Type : 'UI.DataField',
-                Label : 'Active',
+                Label : '{i18n>Active}',
                 Value : active,
             },
         ],
@@ -66,22 +66,22 @@ annotate service.BTPConnection with @(
     UI.LineItem : [
         {
             $Type : 'UI.DataField',
-            Label : 'subaccountName',
+            Label : '{i18n>Subaccountname}',
             Value : subaccountName,
         },
         {
             $Type : 'UI.DataField',
-            Label : 'serviceType',
+            Label : '{i18n>Servicetype}',
             Value : serviceType,
         },
         {
             $Type : 'UI.DataField',
-            Label : 'tokenUrl',
+            Label : '{i18n>Tokenurl}',
             Value : tokenUrl,
         },
         {
             $Type : 'UI.DataField',
-            Label : 'apiBaseUrl',
+            Label : '{i18n>Apibaseurl}',
             Value : apiBaseUrl,
         },
     ],

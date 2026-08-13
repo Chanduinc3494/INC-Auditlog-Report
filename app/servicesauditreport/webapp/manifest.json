@@ -136,13 +136,13 @@
                       "press": "servicesauditreport.ext.controller.HeaderActions.onLastSyncPress",
                       "visible": true,
                       "enabled": true,
-                      "text": "Last Sync Info"
+                      "text": "{i18n>lastSyncInfo}"
                     },
                     "SyncBtn": {
                       "press": "servicesauditreport.ext.controller.SyncBtn.SyncServiceLogs",
                       "visible": true,
                       "enabled": true,
-                      "text": "Sync Logs",
+                      "text": "{i18n>syncLogs}",
                       "icon": "sap-icon://synchronize",
                       "position": {
                         "anchor": "lastSync",
