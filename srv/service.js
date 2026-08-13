@@ -604,7 +604,7 @@ module.exports = cds.service.impl(async function () {
 
 
     this.on("clearEntitlements", async () => {
-        await DELETE.from(ConfigurationReport);
+        await DELETE.from(UserAuditReport);
         return "All ServiceAuditReport records deleted";
     });
 
@@ -861,6 +861,65 @@ this.on("syncUserAuditLogs", async () => {
          * Fetch only logs since the previous successful sync.
          * First run starts from 1970.
          */
+         const subaccountIds = [
+            ...new Set(
+                connections
+                    .map(connection => connection.subaccountId)
+                    .filter(Boolean)
+            )
+        ];
+        const accountsConnection = await SELECT.one
+            .from(BTPConnection)
+            .where({
+                serviceType: "ACCOUNTS",
+                active: true
+            });
+            let subaccountMap = new Map();
+ 
+        for (const subaccountId of subaccountIds) {
+ 
+            subaccountMap.set(
+                subaccountId,
+                subaccountId
+            );
+        }
+          if (accountsConnection) {
+ 
+            try {
+ 
+                const accountsToken =
+                    await oAuthManager.getToken(
+                        accountsConnection
+                    );
+ 
+                const fetchedMap =
+                    await fetchSubaccount(
+                        accountsConnection.apiBaseUrl,
+                        accountsToken,
+                        subaccountIds
+                    );
+ 
+                // Replace fallback ID with actual name
+                for (const [
+                    subaccountId,
+                    subaccountDetails
+                ] of fetchedMap) {
+ 
+                    subaccountMap.set(
+                        subaccountId,
+                        subaccountDetails.subdomain
+                    );
+                }
+ 
+            } catch (err) {
+ 
+                console.warn(
+                    "Could not fetch subaccount names. Using subaccount IDs instead.",
+                    err.message
+                );
+            }
+        }
+
         const timeFrom = syncStatus?.lastSyncAt
             ? formatAuditTimestamp(syncStatus.lastSyncAt)
             : formatAuditTimestamp("1970-01-01T00:00:00Z");
@@ -870,7 +929,11 @@ this.on("syncUserAuditLogs", async () => {
         const entries = [];
 
         for (const connection of connections) {
-
+              const subaccountName =
+                subaccountMap.get(
+                    connection.subaccountId
+                ) ||
+                connection.subaccountId;
             try {
 
                 const token =
@@ -894,11 +957,11 @@ this.on("syncUserAuditLogs", async () => {
                         timeTo
                     );
 
-                if (connectionEntries && connectionEntries.length > 0) {
-
-                    entries.push(
-                        ...connectionEntries
-                    );
+               for (const entry of connectionEntries || []) {
+ 
+                    entry.subaccount =
+                        subaccountName;
+                    entries.push(entry);
                 }
 
             } catch (connectionError) {
@@ -943,9 +1006,9 @@ this.on("syncUserAuditLogs", async () => {
                     reportName: "USER_AUDIT"
                 });
 
-            console.log(
-                "No new User Audit logs found"
-            );
+            // console.log(
+            //     "No new User Audit logs found"
+            // );
 
             return "No new User Audit logs found";
         }
@@ -953,14 +1016,14 @@ this.on("syncUserAuditLogs", async () => {
         /*
          * Debug: show first 5 records
          */
-        entries.slice(0, 5).forEach((entry, index) => {
+        // entries.slice(0, 5).forEach((entry, index) => {
 
-            console.log(
-                `Final User Audit Record ${index + 1}:`,
-                JSON.stringify(entry, null, 2)
-            );
+        //     console.log(
+        //         `Final User Audit Record ${index + 1}:`,
+        //         JSON.stringify(entry, null, 2)
+        //     );
 
-        });
+        // });
 
         /*
          * Insert new records
@@ -969,9 +1032,9 @@ this.on("syncUserAuditLogs", async () => {
             .into(UserAuditReport)
             .entries(entries);
 
-        console.log(
-            `${entries.length} User Audit records inserted into HANA`
-        );
+        // console.log(
+        //     `${entries.length} User Audit records inserted into HANA`
+        // );
 
         /*
          * Update sync status
