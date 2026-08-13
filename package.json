@@ -2,7 +2,7 @@
   "name": "audit-logging-and-reporting",
   "version": "1.0.0",
   "dependencies": {
-    "@cap-js/hana": "^2.7.0",
+    "@cap-js/hana": "^2.8.0",
     "@sap/cds": "^9.8.5",
     "@sap/xssec": "^4",
     "axios": "^1.19.0"

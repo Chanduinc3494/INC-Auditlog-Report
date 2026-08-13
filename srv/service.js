@@ -661,7 +661,8 @@ module.exports = cds.service.impl(async function () {
             const subaccountIds = [
                 ...new Set(
                     connections
-                        .map(connection => connection.subaccountId)
+                        //.map(connection => connection.subaccountId)
+                        .map(connection => connection.subaccountId?.trim())
                         .filter(Boolean)
                 )
             ];
@@ -676,12 +677,20 @@ module.exports = cds.service.impl(async function () {
             let subaccountMap = new Map();
 
 
+          //  for (const subaccountId of subaccountIds) {
+             //   subaccountMap.set(
+                 ////   subaccountId,
+               //     subaccountId
+             //   );
+           // }
+
             for (const subaccountId of subaccountIds) {
-                subaccountMap.set(
-                    subaccountId,
-                    subaccountId
-                );
-            }
+            const cleanId = subaccountId?.trim();
+
+            if (cleanId) {
+            subaccountMap.set(cleanId, cleanId);
+            }       
+}
 
             if (accountsConnection) {
 
@@ -700,12 +709,24 @@ module.exports = cds.service.impl(async function () {
                         );
 
                     // Replace fallback map with actual values
+                   /// for (const [subaccountId, subaccountDetails] of fetchedMap) {
+                       // subaccountMap.set(
+                         //   subaccountId,
+                           // subaccountDetails
+                        //);
+                    //}
+
                     for (const [subaccountId, subaccountDetails] of fetchedMap) {
+
+                    const cleanId = subaccountId?.trim();
+
+                    if (cleanId) {
                         subaccountMap.set(
-                            subaccountId,
+                            cleanId,
                             subaccountDetails
                         );
                     }
+                }
 
                 } catch (err) {
 
@@ -724,48 +745,59 @@ module.exports = cds.service.impl(async function () {
             const entries = [];
 
             for (const connection of connections) {
-                const subaccountDetails = subaccountMap.get(connection.subaccountId);
-                const subaccountName =
-                    subaccountDetails?.subdomain ||
-                    connection.subaccountId;
 
-                const region =
-                    subaccountDetails?.region || null;
-                const token = await oAuthManager.getToken(connection);
+    const subaccountId = connection.subaccountId?.trim();
 
-                if (!token) {
-                    continue;
-                }
+    const subaccountDetails = subaccountMap.get(subaccountId);
 
-                try {
-                    const configurationLogs =
-                        await fetchConfigurationAuditLogs(
-                            connection.apiBaseUrl,
-                            token,
-                            timeFrom,
-                            timeTo
-                        );
+    console.log("subaccountId:", subaccountId);
+    console.log("subaccountDetails:", subaccountDetails);
 
-                    for (const log of configurationLogs || []) {
-                        const mappedEntries = mapConfigurationAuditLog(log);
-                        for (const entry of mappedEntries) {
+    const subaccountName =
+        subaccountDetails?.subdomain?.trim() ||
+        subaccountId;
 
-                            entry.subAccount = subaccountName;
-                            entry.region = region;
+    const region =
+        subaccountDetails?.region?.trim() || null;
 
+    const token = await oAuthManager.getToken(connection);
 
+    if (!token) {
+        continue;
+    }
 
-                            entries.push(entry);
-                        }
-                    }
-                } catch (connectionError) {
-                    console.error(
-                        `Failed to fetch configuration audit logs for ${subaccountName}:`,
-                        connectionError.message
-                    );
-                    continue;
-                }
+    try {
+        const configurationLogs =
+            await fetchConfigurationAuditLogs(
+                connection.apiBaseUrl,
+                token,
+                timeFrom,
+                timeTo
+            );
+
+        for (const log of configurationLogs || []) {
+
+            const mappedEntries = mapConfigurationAuditLog(log);
+
+            for (const entry of mappedEntries) {
+
+                entry.subAccount = subaccountName;
+                entry.region = region;
+
+                entries.push(entry);
             }
+        }
+
+    } catch (connectionError) {
+
+        console.error(
+            `Failed to fetch configuration audit logs for ${subaccountName}:`,
+            connectionError.message
+        );
+
+        continue;
+    }
+}
 
             if (entries.length > 0) {
                 console.log("ggs", entries.length);
@@ -861,13 +893,23 @@ this.on("syncUserAuditLogs", async () => {
          * Fetch only logs since the previous successful sync.
          * First run starts from 1970.
          */
-         const subaccountIds = [
+        // const subaccountIds = [
+           // ...new Set(
+                //connections
+                   // .map(connection => connection.subaccountId)
+                    //.filter(Boolean)
+            //)
+        //];
+
+                const subaccountIds = [
             ...new Set(
                 connections
-                    .map(connection => connection.subaccountId)
+                    .map(connection => connection.subaccountId?.trim())
                     .filter(Boolean)
             )
         ];
+
+
         const accountsConnection = await SELECT.one
             .from(BTPConnection)
             .where({
@@ -876,13 +918,21 @@ this.on("syncUserAuditLogs", async () => {
             });
             let subaccountMap = new Map();
  
-        for (const subaccountId of subaccountIds) {
+       // for (const subaccountId of subaccountIds) {
  
-            subaccountMap.set(
-                subaccountId,
-                subaccountId
-            );
+           // subaccountMap.set(
+               // subaccountId,
+               // subaccountId
+           // );
+       // }
+
+        for (const subaccountId of subaccountIds) {
+        const cleanId = subaccountId?.trim();
+
+        if (cleanId) {
+            subaccountMap.set(cleanId, cleanId);
         }
+}
           if (accountsConnection) {
  
             try {
@@ -900,16 +950,36 @@ this.on("syncUserAuditLogs", async () => {
                     );
  
                 // Replace fallback ID with actual name
-                for (const [
-                    subaccountId,
-                    subaccountDetails
-                ] of fetchedMap) {
+                // for (const [
+                //     subaccountId,
+                //     subaccountDetails
+                // ] of fetchedMap) {
  
-                    subaccountMap.set(
-                        subaccountId,
-                        subaccountDetails.subdomain
-                    );
-                }
+                //     subaccountMap.set(
+                //         subaccountId,
+                //         subaccountDetails.subdomain
+                //     );
+                // }
+
+
+        for (const [subaccountId, subaccountDetails] of fetchedMap) {
+
+            const cleanId = subaccountId?.trim();
+            console.log(
+        "subaccountId:",
+        cleanId,
+        "subaccountDetails:",
+        subaccountDetails
+    );
+
+            if (cleanId) {
+                subaccountMap.set(
+                    cleanId,
+                    subaccountDetails?.subdomain?.trim() || cleanId
+                );
+            }
+        }
+
  
             } catch (err) {
  
@@ -929,11 +999,9 @@ this.on("syncUserAuditLogs", async () => {
         const entries = [];
 
         for (const connection of connections) {
-              const subaccountName =
-                subaccountMap.get(
-                    connection.subaccountId
-                ) ||
-                connection.subaccountId;
+              const subaccountId =connection.subaccountId?.trim();
+
+              const subaccountName =subaccountMap.get(subaccountId) || subaccountId;
             try {
 
                 const token =
@@ -954,7 +1022,8 @@ this.on("syncUserAuditLogs", async () => {
                         connection,
                         token,
                         timeFrom,
-                        timeTo
+                        timeTo,
+                        subaccountName
                     );
 
                for (const entry of connectionEntries || []) {
@@ -1053,6 +1122,13 @@ this.on("syncUserAuditLogs", async () => {
             });
 
         return `${entries.length} User Audit records synchronized successfully`;
+
+        console.log("======================================");
+console.log("LAST SYNC FROM DB:", syncStatus?.lastSyncAt);
+console.log("TIME FROM:", timeFrom);
+console.log("TIME TO:", timeTo);
+console.log("CURRENT JS TIME:", new Date().toISOString());
+console.log("======================================");
 
     } catch (err) {
 
