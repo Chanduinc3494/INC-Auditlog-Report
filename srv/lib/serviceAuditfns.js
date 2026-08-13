@@ -32,26 +32,7 @@ async function fetchServiceInstances(baseUrl, token) {
 
 }
 
-// async function fetchServicePlans(baseUrl, token, environment) {
 
-//     const response = await axios.get(
-
-//         `${baseUrl}/v1/service_plans`,
-
-//         {
-//             headers: {
-//                 Authorization: `Bearer ${token}`
-//             },
-//             params: {
-//                 environment,
-//                 max_items: 100
-//             }
-//         }
-
-//     );
-
-//     return response.data;
-// }
 
 async function fetchServicePlans(baseUrl, token, environment) {
 
@@ -92,28 +73,7 @@ async function fetchServicePlans(baseUrl, token, environment) {
         );
     }
 }
-// async function fetchServiceOfferings(baseUrl, token,environment) {
 
-//     const response = await axios.get(
-
-//         baseUrl + "/v1/service_offerings",
-
-//         {
-
-//             headers: {
-
-//                 Authorization:
-//                 `Bearer ${token}`
-
-//             }
-
-//         }
-
-//     );
-
-//     return response.data;
-
-// }
 
 async function fetchServiceOfferings(baseUrl, token, environment) {
 

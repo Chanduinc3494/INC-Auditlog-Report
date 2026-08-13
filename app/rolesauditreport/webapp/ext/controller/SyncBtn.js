@@ -85,14 +85,20 @@
 // });
 sap.ui.define([
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], function (MessageToast, MessageBox) {
+    "sap/m/MessageBox",
+  "sap/m/BusyDialog"
+], function (MessageToast, MessageBox,BusyDialog) {
     "use strict";
 
     return {
 
         SyncRoleLogs: async function (oContext, aSelectedContexts) {
+             const oBusyDialog = new BusyDialog({
+                title: "Loading",
+                text: "Fetching data..."
+            });
             try {
+                oBusyDialog.open();
 
                 // --------------------------------------------------
                 // 1. Get the List Report page
@@ -140,10 +146,48 @@ sap.ui.define([
                 const oResult =
                     oOperation.getBoundContext().getObject();
 
-                MessageToast.show(
-                    oResult?.value ||
-                    "Role synchronization completed successfully."
-                );
+                if (
+                    oResult?.failures &&
+                    oResult.failures.length > 0
+                ) {
+
+                    console.error(
+                        "Role synchronization failures:",
+                        oResult.failures
+                    );
+
+                    oResult.failures.forEach(function (failure) {
+
+                        console.error(
+                            `[${failure.api}] ` +
+                            `[${failure.operation || "N/A"}] ` +
+                            `Subaccount: ${failure.subaccountId || "N/A"} ` +
+                            `Error: ${failure.error || "Unknown error"}`
+                        );
+
+                    });
+                }
+               if (
+                    oResult?.status === "PARTIAL_SUCCESS"
+                ) {
+
+                    MessageBox.warning(
+                        oResult?.message ||
+                        "Role synchronization completed with some failures.",
+                        {
+                            title:
+                                "Role Synchronization Completed with Warnings"
+                        }
+                    );
+
+                } else {
+
+                    MessageToast.show(
+                        oResult?.message ||
+                        "Role synchronization completed successfully."
+                    );
+                }
+
 
                 // --------------------------------------------------
                 // 6. Refresh List Report
@@ -162,6 +206,13 @@ sap.ui.define([
                     err.message ||
                     "Role synchronization failed."
                 );
+            }finally {
+
+                // Always close BusyDialog
+                oBusyDialog.close();
+
+                // Destroy it after use
+                oBusyDialog.destroy();
             }
         }
     };

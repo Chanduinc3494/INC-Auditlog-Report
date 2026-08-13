@@ -108,7 +108,7 @@ async function fetchUsers(
 
             } while (page <= totalPages);
         }
-
+       
         return allUsers;
     } catch (err) {
 

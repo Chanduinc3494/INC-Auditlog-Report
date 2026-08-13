@@ -1,7 +1,8 @@
 sap.ui.define([
     "sap/m/MessageToast",
-     "sap/m/MessageBox"
-], function(MessageToast,MessageBox) {
+     "sap/m/MessageBox",
+      "sap/m/BusyDialog"
+], function(MessageToast,MessageBox,BusyDialog) {
     'use strict';
 
     return {
@@ -12,8 +13,12 @@ sap.ui.define([
          * @param aSelectedContexts the selected contexts of the table rows.
          */
         SyncBtnFunction: async function(oContext, aSelectedContexts) {
+             const oBusyDialog = new BusyDialog({
+                title: "Loading",
+                text: "Fetching data..."
+            });
             try {
-
+                oBusyDialog.open();
                 // --------------------------------------------------
                 // 1. Get the List Report page
                 // --------------------------------------------------
@@ -59,11 +64,49 @@ sap.ui.define([
 
                 const oResult =
                     oOperation.getBoundContext().getObject();
+                
+                  if (
+                    oResult?.failures &&
+                    oResult.failures.length > 0
+                ) {
 
-                MessageToast.show(
-                    oResult?.value ||
-                    "Configuration synchronization completed successfully."
-                );
+                    console.error(
+                        "Configuration synchronization failures:",
+                        oResult.failures
+                    );
+
+                    oResult.failures.forEach(function (failure) {
+
+                        console.error(
+                            `[${failure.api}] ` +
+                            `[${failure.operation || "N/A"}] ` +
+                            `Subaccount: ${failure.subaccountId || "N/A"} ` +
+                            `Error: ${failure.error || "Unknown error"}`
+                        );
+
+                    });
+                }
+                if (oResult?.status === "PARTIAL_SUCCESS") {
+
+                    MessageBox.warning(
+                        oResult?.message ||
+                        "Synchronization completed with some failures.",
+                        {
+                            title: "Synchronization Completed with Warnings"
+                        }
+                    );
+
+                } else {
+
+                    MessageToast.show(
+                        oResult?.message ||
+                        "Configuration synchronization completed successfully."
+                    );
+                }
+                // MessageToast.show(
+                //     oResult?.value ||
+                //     "Configuration synchronization completed successfully."
+                // );
 
                 // --------------------------------------------------
                 // 6. Refresh List Report
@@ -82,6 +125,13 @@ sap.ui.define([
                     err.message ||
                     "Configuration synchronization failed."
                 );
+            }finally {
+
+                // Always close BusyDialog
+                oBusyDialog.close();
+
+                // Destroy it after use
+                oBusyDialog.destroy();
             }
         }
     };

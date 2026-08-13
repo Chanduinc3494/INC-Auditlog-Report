@@ -3,7 +3,7 @@ const axios = require("axios");
 async function fetchSubaccount(baseUrl, token, subaccountIds) {
 
     const subaccountMap = new Map();
-
+    const failures = [];
     for (const subaccountId of subaccountIds) {
 
         try {
@@ -29,10 +29,24 @@ async function fetchSubaccount(baseUrl, token, subaccountIds) {
 
         } catch (err) {
 
+            const errorMessage =
+                err.response?.data?.message ||
+                err.response?.data?.error_description ||
+                err.response?.data ||
+                err.message;
+
             console.error(
-                `Failed to fetch subaccount ${subaccountId}:`,
-                err.response?.data || err.message
+                `Accounts API failed for subaccount ${subaccountId}:`,
+                errorMessage
             );
+
+            // Store failure
+            failures.push({
+                api: "ACCOUNTS",
+                operation:"API_CAL",
+                subaccountId: subaccountId,
+            });
+
 
             // Keep the ID as fallback
             subaccountMap.set(
@@ -44,8 +58,8 @@ async function fetchSubaccount(baseUrl, token, subaccountIds) {
             );
         }
     }
-
-    return subaccountMap;
+    console.log(failures);
+    return {subaccountMap,failures};
 }
 
 module.exports = {

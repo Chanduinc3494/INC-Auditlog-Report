@@ -81,16 +81,20 @@
 // });
 sap.ui.define([
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], function (MessageToast, MessageBox) {
+    "sap/m/MessageBox",
+     "sap/m/BusyDialog"
+], function (MessageToast, MessageBox,BusyDialog) {
     "use strict";
 
     return {
 
         SyncServiceLogs: async function (oContext, aSelectedContexts) {
-
+            const oBusyDialog = new BusyDialog({
+                title: "Loading",
+                text: "Fetching data..."
+            });
             try {
-
+                  oBusyDialog.open();
                 // --------------------------------------------------
                 // 1. Get the List Report page
                 // --------------------------------------------------
@@ -133,15 +137,64 @@ sap.ui.define([
 
                 const result =
                     oOperation.getBoundContext().getObject();
+                 if (
+                    result?.failures &&
+                    result.failures.length > 0
+                ) {
 
+                    console.error(
+                        "Service synchronization failures:",
+                        result.failures
+                    );
+
+                    result.failures.forEach(function (failure) {
+
+                        console.error(
+                            `[${failure.api || "UNKNOWN API"}] ` +
+                            `[${failure.operation || "UNKNOWN OPERATION"}] ` +
+                            `${
+                                failure.environment
+                                    ? `[${failure.environment}] `
+                                    : ""
+                            }` +
+                            `Subaccount: ${
+                                failure.subaccountId || "N/A"
+                            } ` +
+                            `Error: ${
+                                failure.error || "Unknown error"
+                            }`
+                        );
+
+                    });
+                }
+                if (
+                    result?.status === "PARTIAL_SUCCESS"
+                ) {
+
+                    MessageBox.warning(
+                        result?.message ||
+                        "Service synchronization completed with some failures.",
+                        {
+                            title:
+                                "Service Synchronization Completed with Warnings"
+                        }
+                    );
+
+                } else {
+
+                    MessageToast.show(
+                        result?.message ||
+                        "Service synchronization completed successfully."
+                    );
+                }
                 // --------------------------------------------------
                 // 5. Show success message
                 // --------------------------------------------------
 
-                MessageToast.show(
-                    result?.value ||
-                    "Service synchronization completed successfully."
-                );
+                // MessageToast.show(
+                //     result?.value ||
+                //     "Service synchronization completed successfully."
+                // );
 
                 // --------------------------------------------------
                 // 6. Refresh List Report
@@ -156,6 +209,13 @@ sap.ui.define([
                     "Synchronization failed."
                 );
 
+            }finally {
+
+                // Always close BusyDialog
+                oBusyDialog.close();
+
+                // Destroy it after use
+                oBusyDialog.destroy();
             }
         }
     };
