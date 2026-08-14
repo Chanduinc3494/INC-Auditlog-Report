@@ -56,8 +56,9 @@ module.exports = cds.service.impl(async function () {
 
     // service logs
     this.on("syncServiceLogs", async (req) => {
-
-
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        //fetching sync status
         await UPDATE(ReportSyncStatus)
             .set({
                 isRunning: true,
@@ -66,7 +67,8 @@ module.exports = cds.service.impl(async function () {
             .where({
                 reportName: "SERVICE_AUDIT"
             });
-        const failedConnections = [];
+
+        const failedConnections = []; // store all failures 
 
         try {
 
@@ -75,7 +77,7 @@ module.exports = cds.service.impl(async function () {
                 .where({
                     serviceType: "SERVICE_MANAGER",
                     active: true
-                });
+                }); // fetching all the subaccount with their credentails for the service type service manager 
 
             for (const connection of connections) {
                 const subaccountId = connection.subaccountId;
@@ -84,7 +86,7 @@ module.exports = cds.service.impl(async function () {
                     let token;
 
                     try {
-                        token = await oAuthManager.getToken(connection);
+                        token = await oAuthManager.getToken(connection); // generating token for logs
 
                     } catch (err) {
                         failedConnections.push({
@@ -140,7 +142,7 @@ module.exports = cds.service.impl(async function () {
                         ...sapBtpPlans,
                         ...cloudFoundryPlans
                     ];
-                    // offering
+                    // service offering
                     let sapBtpOfferings = [];
                     let cloudFoundryOfferings = [];
 
@@ -183,7 +185,7 @@ module.exports = cds.service.impl(async function () {
                         ...sapBtpOfferings,
                         ...cloudFoundryOfferings
                     ];
-                    // instance
+                    // service instances
                     let instances;
                     try {
                         instances =
@@ -204,7 +206,7 @@ module.exports = cds.service.impl(async function () {
                         continue;
                     }
 
-
+                    // doing mapping of service plans and offerings
                     const offeringMap = new Map();
                     const planMap = new Map();
 
@@ -226,10 +228,11 @@ module.exports = cds.service.impl(async function () {
                         )
                     ];
 
-                    const userMap = new Map();
+                    const userMap = new Map(); // mapp user data to created by we get in instances
                     if (cfConnection && userGuids.length > 0) {
                         try {
-                            const cfToken = await cfAuth.getToken(cfConnection);
+                            const cfToken = await cfAuth.getToken(cfConnection); // generating token for cloud foundry
+                            // fetching user from cf
                             const users = await fetchUsers(cfConnection, cfToken, userGuids);
                             for (const user of users) {
                                 userMap.set(user.guid, user);
@@ -258,7 +261,7 @@ module.exports = cds.service.impl(async function () {
                         if (!offering) continue;
                         const creator = userMap.get(instance.created_by);
                         const createdBy = creator?.username || instance.created_by;
-
+                        // checking if instance already exist in our report
                         const existing = await SELECT.one
                             .from(ServiceAuditReport)
                             .where({
@@ -267,36 +270,28 @@ module.exports = cds.service.impl(async function () {
                             });
 
                         const entry = {
-
                             system: "SAP BTP",
                             instance: instance.name,
                             serviceInstanceId: instance.id,
                             subaccountId: connection.subaccountId,
                             subaccount: instance.context.subdomain,
-
                             serviceName: offering.name,
-
                             planName: plan.name,
-
                             status: instance.ready ? "ACTIVE" : "NOT NOTACTIVE",
-
                             createdOn: new Date(instance.created_at),
-
                             changedOn: new Date(instance.updated_at),
-
                             createdBy: createdBy,
-
                         };
 
                         if (!existing) {
-
+                            // add in case it does not exist
                             await INSERT
                                 .into(ServiceAuditReport)
                                 .entries(entry);
 
 
                         } else {
-
+                            // update in case of exist
                             await UPDATE(ServiceAuditReport)
                                 .set(entry)
                                 .where({
@@ -306,6 +301,7 @@ module.exports = cds.service.impl(async function () {
 
                         }
                     }
+                    // delete the instances which is not there in current instances
                     const existingRecords = await SELECT.from(ServiceAuditReport).columns("ID", "serviceInstanceId").where({
                         subaccountId: connection.subaccountId
                     })
@@ -336,37 +332,38 @@ module.exports = cds.service.impl(async function () {
 
                     continue;
                 }
-                const finalSyncStatus =
-                    failedConnections.length > 0
-                        ? "PARTIAL_SUCCESS"
-                        : "SUCCESS";
 
-                const message =
-                    `Synchronization completed. ` +
-                    `${failedConnections.length > 0
-                        ? `${failedConnections.length} API failure(s) detected.`
-                        : "All APIs processed successfully."
-                    }`;
-
-                await UPDATE(ReportSyncStatus)
-                    .set({
-                        lastSyncAt: new Date(),
-                        lastRunAt: new Date(),
-                        lastSyncStatus: finalSyncStatus,
-                        isRunning: false,
-                        message: message
-                    })
-                    .where({
-                        reportName: "SERVICE_AUDIT"
-                    });
-
-
-                return {
-                    status: finalSyncStatus,
-                    message: message,
-                    failures: failedConnections
-                };
             }
+            const finalSyncStatus =
+                failedConnections.length > 0
+                    ? "PARTIAL_SUCCESS"
+                    : "SUCCESS";
+
+            const message =
+                `Synchronization completed. ` +
+                `${failedConnections.length > 0
+                    ? `${failedConnections.length} API failure(s) detected.`
+                    : "All APIs processed successfully."
+                }`;
+
+            await UPDATE(ReportSyncStatus)
+                .set({
+                    lastSyncAt: new Date(),
+                    lastRunAt: new Date(),
+                    lastSyncStatus: finalSyncStatus,
+                    isRunning: false,
+                    message: message
+                })
+                .where({
+                    reportName: "SERVICE_AUDIT"
+                });
+
+
+            return {
+                status: finalSyncStatus,
+                message: message,
+                failures: failedConnections
+            };
 
 
         } catch (err) {
@@ -391,36 +388,40 @@ module.exports = cds.service.impl(async function () {
 
     // Sync Role Logs
     this.on("syncRoleLogs", async () => {
-
-        let syncStatus = await SELECT.one.from(ReportSyncStatus).where({ reportName: "ROLE_AUDIT" });
+        // one month in case of last sync time is empty or null : currently 1 August 2026
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        if (!syncStatus) {
-            await INSERT.into(ReportSyncStatus).entries({
-                reportName: "ROLE_AUDIT",
-                lastSyncStatus: "RUNNING",
-                isRunning: true,
-                lastSyncAt: formatAuditTimestamp(oneMonthAgo),
-            });
-        }
-        else {
-            await UPDATE(ReportSyncStatus)
-                .set({
-                    isRunning: true,
-                    lastSyncStatus: "RUNNING"
-                })
-                .where({
-                    reportName: "ROLE_AUDIT"
-                });
-        }
         try {
-            const failedConnections = [];
+            // fetching sync status
+            let syncStatus = await SELECT.one.from(ReportSyncStatus).where({ reportName: "ROLE_AUDIT" });
+            if (!syncStatus) {
+                await INSERT.into(ReportSyncStatus).entries({
+                    reportName: "ROLE_AUDIT",
+                    lastSyncStatus: "RUNNING",
+                    isRunning: true,
+                    lastSyncAt: formatAuditTimestamp(oneMonthAgo),
+                });
+            }
+            else {
+                await UPDATE(ReportSyncStatus)
+                    .set({
+                        isRunning: true,
+                        lastSyncStatus: "RUNNING"
+                    })
+                    .where({
+                        reportName: "ROLE_AUDIT"
+                    });
+            }
+
+            const failedConnections = []; // to store failed connections
+            // fetching subaccount credentials of type audit logs
             const connections = await SELECT
                 .from(BTPConnection)
                 .where({
                     serviceType: "AUDIT_LOG",
                     active: true
                 });
+            // creating array of subaccountId
             const subaccountIds = [
                 ...new Set(
                     connections
@@ -428,7 +429,7 @@ module.exports = cds.service.impl(async function () {
                         .filter(Boolean)
                 )
             ];
-
+            // fetching credentails for subaccount
             const accountsConnection = await SELECT.one
                 .from(BTPConnection)
                 .where({
@@ -447,14 +448,13 @@ module.exports = cds.service.impl(async function () {
             }
 
             if (accountsConnection) {
-
                 try {
-
+                    // token for subaccounts
                     const accountsToken =
                         await oAuthManager.getToken(
                             accountsConnection
                         );
-
+                    // subaccounts data
                     const {
                         subaccountMap: fetchedMap,
                         failures: accountFailures
@@ -496,16 +496,18 @@ module.exports = cds.service.impl(async function () {
                     : formatAuditTimestamp("2026-08-01T00:00:00Z");
 
             console.log(`Syncing from ${timeFrom} to ${timeTo}`);
-
+            // looping through the subaccount with service type audit log
             for (const connection of connections) {
                 const subaccountName = subaccountMap.get(connection.subaccountId) || connection.subaccountId;
                 try {
+                    // oauth token for log
                     const token = await oAuthManager.getToken(connection);
                     if (!token) {
                         throw new Error(
                             "Audit Log OAuth token was not returned."
                         );
                     }
+                    // fetching logs 
                     const roleLogs = await fetchRoleLogs(connection.apiBaseUrl, token, timeFrom, timeTo);
 
 
@@ -658,7 +660,7 @@ module.exports = cds.service.impl(async function () {
 
                                 status: message.success ? "Success" : "Failure",
 
-                                subaccountName: connection.subaccountName
+                                subaccountName: subaccountName
 
                             };
 
@@ -698,7 +700,7 @@ module.exports = cds.service.impl(async function () {
 
                                     status: message.success ? "Success" : "Failure",
 
-                                    subaccountName: connection.subaccountName
+                                    subaccountName: subaccountName
 
                                 });
 
@@ -733,7 +735,7 @@ module.exports = cds.service.impl(async function () {
             }
 
 
-
+            // updating sync status : incase of partial run keep do not change last sync status else change to toTime
             const syncResult =
                 failedConnections.length > 0
                     ? "PARTIAL_SUCCESS"
@@ -745,7 +747,7 @@ module.exports = cds.service.impl(async function () {
 
             await UPDATE(ReportSyncStatus)
                 .set({
-                    lastSyncAt: timeTo,
+                    lastSyncAt: syncResult === "SUCCESS" ? timeTo : syncStatus.lastSyncAt,
                     lastRunAt: timeTo,
                     lastSyncStatus: syncResult,
                     isRunning: false,
@@ -1023,7 +1025,8 @@ module.exports = cds.service.impl(async function () {
         let syncStatus = await SELECT.one
             .from(ReportSyncStatus)
             .where({ reportName: "USER_AUDIT" });
-
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         // Create / mark sync as RUNNING
         if (!syncStatus) {
 
