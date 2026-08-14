@@ -781,43 +781,38 @@ module.exports = cds.service.impl(async function () {
         }
     })
 
-
+    // for deleting data from report 
     this.on("clearEntitlements", async () => {
-        await DELETE.from(UserAuditReport);
+        await DELETE.from(ConfigurationReport);
         return "All ServiceAuditReport records deleted";
     });
 
-    // this.on("syncAuditLogs",async ()=>{
-    //     const logs = await audit.fetchAuditLogs();
-    //     await db.insert(UserAuditReport).enteries(logs);
-    //     return "SUCCESSS";
-    // })
-
+    //========= CONFIGURATION REPORT===================
     this.on("syncConfigurationAuditLogs", async () => {
-        let syncStatus = await SELECT.one
-            .from(ReportSyncStatus)
-            .where({ reportName: "CONFIGURATION" });
-
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-        if (!syncStatus) {
-            await INSERT.into(ReportSyncStatus).entries({
-                reportName: "CONFIGURATION",
-                lastSyncStatus: "RUNNING",
-                isRunning: true
-            });
-        } else {
-            await UPDATE(ReportSyncStatus)
-                .set({
-                    isRunning: true,
-                    lastSyncStatus: "RUNNING"
-                })
-                .where({ reportName: "CONFIGURATION" });
-        }
-
         try {
-            const failedConnections = [];
+            // fetching sync data
+            const syncStatus = await SELECT.one
+                .from(ReportSyncStatus)
+                .where({ reportName: "CONFIGURATION" });
+            if (!syncStatus) {
+                await INSERT.into(ReportSyncStatus).entries({
+                    reportName: "CONFIGURATION",
+                    lastSyncStatus: "RUNNING",
+                    isRunning: true
+                });
+            } else {
+                await UPDATE(ReportSyncStatus)
+                    .set({
+                        isRunning: true,
+                        lastSyncStatus: "RUNNING"
+                    })
+                    .where({ reportName: "CONFIGURATION" });
+            }
+
+            const failedConnections = []; // failed connections
+            // fetching subaccount credentails with service type audit log
             const connections = await SELECT
                 .from(BTPConnection)
                 .where({
@@ -833,7 +828,7 @@ module.exports = cds.service.impl(async function () {
                         lastRunAt: formatAuditTimestamp(new Date()),
                         message: "No active Audit Log connections found."
                     })
-                    .where({ reportName: "CONFIGURATION_AUDIT" });
+                    .where({ reportName: "CONFIGURATION" });
 
                 return "No active Audit Log connections found";
             }
@@ -845,7 +840,7 @@ module.exports = cds.service.impl(async function () {
                         .filter(Boolean)
                 )
             ];
-
+            // credentials for subaccount name
             const accountsConnection = await SELECT.one
                 .from(BTPConnection)
                 .where({
@@ -908,7 +903,7 @@ module.exports = cds.service.impl(async function () {
                 : formatAuditTimestamp("2026-08-01T00:00:00Z");
 
             const entries = [];
-
+            // main config log logic for every subaccount
             for (const connection of connections) {
                 const subaccountDetails = subaccountMap.get(connection.subaccountId);
                 const subaccountName =
@@ -918,7 +913,7 @@ module.exports = cds.service.impl(async function () {
                 const region =
                     subaccountDetails?.region || null;
                 try {
-
+                    // oauth token for logs
                     const token = await oAuthManager.getToken(connection);
 
                     if (!token) {
@@ -928,7 +923,7 @@ module.exports = cds.service.impl(async function () {
 
                     }
 
-
+                    // fetch config logs
                     const configurationLogs =
                         await fetchConfigurationAuditLogs(
                             connection.apiBaseUrl,
@@ -938,22 +933,34 @@ module.exports = cds.service.impl(async function () {
                         );
 
                     for (const log of configurationLogs || []) {
-                        const mappedEntries = mapConfigurationAuditLog(log);
-                        for (const entry of mappedEntries) {
 
-                            entry.subAccount = subaccountName;
-                            entry.region = region;
+                        try {
+                            
+                            const mappedEntries =
+                                mapConfigurationAuditLog(log);
 
+                            for (const entry of mappedEntries) {
+                                entry.subAccount = subaccountName;
+                                entry.region = region;
+                                entries.push(entry);
+                            }
 
+                        } catch (logError) {
 
-                            entries.push(entry);
+                            failedConnections.push({
+                                api: "AUDIT_LOG_MAPPING",
+                                subaccountId:
+                                    connection.subaccountId,
+                                messageId:
+                                    log?.message_uuid,
+                                error:
+                                    logError.message
+                            });
+
+                            continue;
                         }
                     }
                 } catch (connectionError) {
-                    console.error(
-                        `Failed to fetch configuration audit logs for ${subaccountName}:`,
-                        connectionError.message
-                    );
                     failedConnections.push({
                         api: "AUDIT_LOG",
                         subaccountId:
@@ -966,8 +973,6 @@ module.exports = cds.service.impl(async function () {
             }
 
             if (entries.length > 0) {
-                console.log("ggs", entries.length);
-
                 await INSERT
                     .into(ConfigurationReport)
                     .entries(entries);
@@ -975,7 +980,7 @@ module.exports = cds.service.impl(async function () {
 
             await UPDATE(ReportSyncStatus)
                 .set({
-                    lastSyncAt: timeTo,
+                    lastSyncAt: failedConnections.length > 0 ? syncStatus.lastSyncAt : timeTo,
                     lastRunAt: timeTo,
                     lastSyncStatus: failedConnections.length > 0
                         ? "PARTIAL_SUCCESS"

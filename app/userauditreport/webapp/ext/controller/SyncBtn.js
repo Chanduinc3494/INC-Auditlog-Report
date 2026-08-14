@@ -110,10 +110,7 @@ sap.ui.define([
                     );
                 }
 
-                // MessageToast.show(
-                //     oResult?.value ||
-                //     "User Logs synchronization completed successfully."
-                // );
+                
 
                 // --------------------------------------------------
                 // 6. Refresh List Report

@@ -103,11 +103,7 @@ sap.ui.define([
                         "Configuration synchronization completed successfully."
                     );
                 }
-                // MessageToast.show(
-                //     oResult?.value ||
-                //     "Configuration synchronization completed successfully."
-                // );
-
+                
                 // --------------------------------------------------
                 // 6. Refresh List Report
                 // --------------------------------------------------

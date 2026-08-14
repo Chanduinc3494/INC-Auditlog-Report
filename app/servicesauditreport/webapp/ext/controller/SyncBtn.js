@@ -187,14 +187,7 @@ sap.ui.define([
                         "Service synchronization completed successfully."
                     );
                 }
-                // --------------------------------------------------
-                // 5. Show success message
-                // --------------------------------------------------
-
-                // MessageToast.show(
-                //     result?.value ||
-                //     "Service synchronization completed successfully."
-                // );
+                
 
                 // --------------------------------------------------
                 // 6. Refresh List Report
