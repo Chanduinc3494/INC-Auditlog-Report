@@ -73,14 +73,21 @@
 // });
 sap.ui.define([
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], function (MessageToast, MessageBox) {
+    "sap/m/MessageBox",
+    "sap/m/BusyDialog"
+], function (MessageToast, MessageBox,BusyDialog) {
     "use strict";
 
     return {
 
         onLastSyncPress: async function () {
+              const oBusyDialog = new BusyDialog({
+                title: "Loading",
+                text: "Fetching synchronization status..."
+            });
+
             try {
+                oBusyDialog.open();
                 const oPage = sap.ui.getCore().byId(
                     "rolesauditreport::RoleAuditReportsList"
                 );
@@ -174,6 +181,13 @@ sap.ui.define([
                     err.message ||
                     "Unable to fetch synchronization status."
                 );
+            }finally {
+
+                // Always close BusyDialog
+                oBusyDialog.close();
+
+                // Destroy it after use
+                oBusyDialog.destroy();
             }
         }
     };

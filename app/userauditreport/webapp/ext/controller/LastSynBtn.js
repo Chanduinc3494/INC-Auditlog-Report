@@ -1,7 +1,8 @@
 sap.ui.define([
     "sap/m/MessageToast",
-    "sap/m/MessageBox"
-], function(MessageToast,MessageBox) {
+    "sap/m/MessageBox",
+    "sap/m/BusyDialog"
+], function(MessageToast,MessageBox,BusyDialog) {
     'use strict';
 
     return {
@@ -12,7 +13,12 @@ sap.ui.define([
          * @param aSelectedContexts the selected contexts of the table rows.
          */
         lastSyncFunction: async function(oContext, aSelectedContexts) {
+             const oBusyDialog = new BusyDialog({
+                title: "Loading",
+                text: "Fetching synchronization status..."
+            });
              try {
+                  oBusyDialog.open();
                 const oPage = sap.ui.getCore().byId(
                     "userauditreport::UserAuditReportsList"
                 );
@@ -106,6 +112,13 @@ sap.ui.define([
                     err.message ||
                     "Unable to fetch synchronization status."
                 );
+            }finally {
+
+                // Always close BusyDialog
+                oBusyDialog.close();
+
+                // Destroy it after use
+                oBusyDialog.destroy();
             }
         }
     };
