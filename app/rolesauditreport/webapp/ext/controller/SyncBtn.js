@@ -137,7 +137,7 @@ sap.ui.define([
                 // 4. Execute CAP action
                 // --------------------------------------------------
 
-                await oOperation.execute();
+                await oOperation.execute("$direct");
 
                 // --------------------------------------------------
                 // 5. Read action response

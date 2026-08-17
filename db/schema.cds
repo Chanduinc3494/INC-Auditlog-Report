@@ -22,10 +22,9 @@ entity UserAuditReport : cuid {
     status         : String(20);
     subaccount     : String(100);
 }
-@assert.unique.auditEntry: [messageId]
+
 entity RoleAuditReport : cuid {
     system          : String(50); // System
-    messageId       : String(100); // Unique logs id
     roleCollection  : String(100); // Role Collection
     event           : String(100); // Event
     timestamp       : Timestamp; // Timestamp (UTC)

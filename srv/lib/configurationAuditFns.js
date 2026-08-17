@@ -343,6 +343,7 @@ function mapConfigurationAuditLog(log) {
 
     const base = {
         system: "BTP",
+        messageId:log.message_uuid,
         userId,
         userRole: "",
         btpService,
