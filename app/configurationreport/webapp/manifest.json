@@ -63,7 +63,8 @@
       "libs": {
         "sap.m": {},
         "sap.ui.core": {},
-        "sap.fe.templates": {}
+        "sap.fe.templates": {},
+        "sap.f": {}
       }
     },
     "contentDensities": {
@@ -104,12 +105,20 @@
       ]
     },
     "routing": {
-      "config": {},
+      "config": {
+        "flexibleColumnLayout": {
+          "defaultTwoColumnLayoutType": "TwoColumnsBeginExpanded",
+          "defaultThreeColumnLayoutType": "ThreeColumnsMidExpanded"
+        },
+        "routerClass": "sap.f.routing.Router"
+      },
       "routes": [
         {
           "pattern": ":?query:",
           "name": "ConfigurationReportList",
-          "target": "ConfigurationReportList"
+          "target": [
+            "ConfigurationReportList"
+          ]
         }
       ],
       "targets": {
@@ -148,9 +157,17 @@
                 }
               }
             }
-          }
+          },
+          "controlAggregation": "beginColumnPages",
+          "contextPattern": ""
         }
       }
+    },
+    "rootView": {
+      "viewName": "sap.fe.templates.RootContainer.view.Fcl",
+      "type": "XML",
+      "async": true,
+      "id": "appRootView"
     }
   },
   "sap.fiori": {
@@ -160,6 +177,9 @@
   "sap.fe": {
     "app": {
       "enableLazyLoading": true
+    },
+    "macros": {
+      "table": {}
     }
   },
   "sap.cloud": {

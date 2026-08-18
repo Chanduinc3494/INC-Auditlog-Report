@@ -217,11 +217,6 @@ annotate service.RoleAuditReports with @(
         },
         {
             $Type : 'UI.DataField',
-            Value : userRole,
-            ![@HTML5.CssDefaults] : { width : '10%' }
-        },
-        {
-            $Type : 'UI.DataField',
             Value : fieldChanged,
             ![@HTML5.CssDefaults] : { width : '10%' }
         },

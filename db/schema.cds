@@ -36,10 +36,10 @@ entity RoleAuditReport : cuid {
     status          : String(20); // Status
     subaccountName  : String(100); // Subaccount Name
 }
-@assert.unique.auditEntry: [messageId]
+// @assert.unique.auditEntry: [messageId]
 entity ConfigurationReport : cuid {
     system          : String(50);
-    messageId: String(100);
+    // messageId: String(100);
     userId          : String(100);
     userRole        : String(50);
     eventType       : String(50);

@@ -5,7 +5,17 @@ service auditLoggingAndReportingService {
 
     entity RoleAuditReports       as
         projection on db.RoleAuditReport {
-            *,
+            ID,
+            system,
+            roleCollection,
+            event,
+            timestamp,
+            changedByUserId,
+            fieldChanged,
+            oldValue,
+            newValue,
+            status,
+            subaccountName,
             virtual statusCriticality : Integer
         };
 
@@ -128,13 +138,6 @@ service auditLoggingAndReportingService {
         group by
             status;
 
-    @readonly
-    entity RoleUserRoleVH         as
-        select from db.RoleAuditReport {
-            key userRole
-        }
-        group by
-            userRole;
 
     @readonly
     entity RoleSubaccountNameVH   as
@@ -161,12 +164,12 @@ service auditLoggingAndReportingService {
             system;
 
     @readonly
-    entity ConfigSubaccountVH     as
+    entity ConfigBTPServiceVH     as
         select from db.ConfigurationReport {
-            key subAccount
+            key btpService
         }
         group by
-            subAccount;
+            btpService;
 
     @readonly
     entity ConfigRoleCollectionVH as
