@@ -801,7 +801,7 @@ module.exports = cds.service.impl(async function () {
 
     // for deleting data from report 
     this.on("clearEntitlements", async () => {
-        await DELETE.from(ConfigurationReport);
+        await DELETE.from(UserAuditReport);
         return "All ServiceAuditReport records deleted";
     });
 
@@ -1682,36 +1682,27 @@ module.exports = cds.service.impl(async function () {
 
     //user report sync
 
+ 
     // this.on("syncUserAuditLogs", async () => {
-
-    //     let syncStatus = await SELECT.one
+    //     const syncStatus = await SELECT.one
     //         .from(ReportSyncStatus)
-    //         .where({ reportName: "USER_AUDIT" });
-    //     const oneMonthAgo = new Date();
-    //     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    //     // Create / mark sync as RUNNING
-    //     if (!syncStatus) {
-
-    //         await INSERT.into(ReportSyncStatus).entries({
-    //             reportName: "USER_AUDIT",
-    //             lastSyncStatus: "RUNNING",
-    //             isRunning: true
+    //         .where({
+    //             reportName: "USER_AUDIT"
     //         });
 
-    //     } else {
+    //     const syncStatusId = syncStatus?.ID || cds.utils.uuid();
 
-    //         await UPDATE(ReportSyncStatus)
-    //             .set({
-    //                 isRunning: true,
-    //                 lastSyncStatus: "RUNNING"
-    //             })
-    //             .where({
-    //                 reportName: "USER_AUDIT"
-    //             });
-    //     }
+    //     await UPSERT.into(ReportSyncStatus).entries({
+    //         ID: syncStatusId,
+    //         reportName: "USER_AUDIT",
+    //         lastSyncStatus: "RUNNING",
+    //         isRunning: true
+    //     });
 
     //     try {
+
     //         let failedConnections = [];
+
     //         const connections = await SELECT
     //             .from(BTPConnection)
     //             .where({
@@ -1719,40 +1710,39 @@ module.exports = cds.service.impl(async function () {
     //                 active: true
     //             });
 
-    //         // No active connections
     //         if (!connections || connections.length === 0) {
 
-    //             await UPDATE(ReportSyncStatus)
-    //                 .set({
-    //                     lastRunAt: formatAuditTimestamp(new Date()),
-    //                     lastSyncStatus: "SUCCESS",
-    //                     isRunning: false,
-    //                     message: "No active Audit Log connections found."
-    //                 })
-    //                 .where({
-    //                     reportName: "USER_AUDIT"
-    //                 });
+    //             const timeTo = formatAuditTimestamp(new Date());
+
+    //             await UPSERT.into(ReportSyncStatus).entries({
+    //                 reportName: "USER_AUDIT",
+    //                 lastRunAt: timeTo,
+    //                 lastSyncStatus: "SUCCESS",
+    //                 isRunning: false,
+    //                 ID: syncStatusId,
+    //                 message: "No active Audit Log connections found."
+    //             });
 
     //             return "No active Audit Log connections found";
     //         }
 
-    //         /*
-    //          * Fetch only logs since the previous successful sync.
-    //          * First run starts from 1970.
-    //          */
     //         const subaccountIds = [
     //             ...new Set(
     //                 connections
-    //                     .map(connection => connection.subaccountId)
+    //                     .map(connection =>
+    //                         connection.subaccountId?.trim()
+    //                     )
     //                     .filter(Boolean)
     //             )
     //         ];
+
     //         const accountsConnection = await SELECT.one
     //             .from(BTPConnection)
     //             .where({
     //                 serviceType: "ACCOUNTS",
     //                 active: true
     //             });
+
     //         let subaccountMap = new Map();
 
     //         for (const subaccountId of subaccountIds) {
@@ -1762,6 +1752,7 @@ module.exports = cds.service.impl(async function () {
     //                 subaccountId
     //             );
     //         }
+
     //         if (accountsConnection) {
 
     //             try {
@@ -1773,14 +1764,13 @@ module.exports = cds.service.impl(async function () {
 
     //                 const {
     //                     subaccountMap: fetchedMap,
-    //                     failures: accountFailures } =
-    //                     await fetchSubaccount(
-    //                         accountsConnection.apiBaseUrl,
-    //                         accountsToken,
-    //                         subaccountIds
-    //                     );
+    //                     failures: accountFailures
+    //                 } = await fetchSubaccount(
+    //                     accountsConnection.apiBaseUrl,
+    //                     accountsToken,
+    //                     subaccountIds
+    //                 );
 
-    //                 // Replace fallback ID with actual name
     //                 for (const [
     //                     subaccountId,
     //                     subaccountDetails
@@ -1791,16 +1781,20 @@ module.exports = cds.service.impl(async function () {
     //                         subaccountDetails.subdomain
     //                     );
     //                 }
+
     //                 failedConnections.push(
     //                     ...(accountFailures || [])
     //                 );
+
     //             } catch (err) {
+
     //                 failedConnections.push({
     //                     api: "ACCOUNTS",
     //                     operation: "OAUTH",
     //                     subaccountId: null,
     //                     error: err.message
     //                 });
+
     //                 console.warn(
     //                     "Could not fetch subaccount names. Using subaccount IDs instead.",
     //                     err.message
@@ -1810,29 +1804,33 @@ module.exports = cds.service.impl(async function () {
 
     //         const timeFrom = syncStatus?.lastSyncAt
     //             ? formatAuditTimestamp(syncStatus.lastSyncAt)
-    //             : formatAuditTimestamp("2026-08-01T00:00:00Z");
+    //             : formatAuditTimestamp(
+    //                 "2026-08-01T00:00:00Z"
+    //             );
 
     //         const timeTo = formatAuditTimestamp(new Date());
 
     //         const entries = [];
 
     //         for (const connection of connections) {
+
+    //             const cleanSubaccountId = connection.subaccountId?.trim();
+
     //             const subaccountName =
     //                 subaccountMap.get(
-    //                     connection.subaccountId
+    //                     cleanSubaccountId
     //                 ) ||
-    //                 connection.subaccountId;
+    //                 cleanSubaccountId;
+
     //             try {
 
-    //                 const token =
-    //                     await oAuthManager.getToken(connection);
+    //                 const token = await oAuthManager.getToken(connection);
 
     //                 if (!token) {
+
     //                     throw new Error(
     //                         "Audit Log OAuth token was not returned."
     //                     );
-
-    //                     continue;
     //                 }
 
     //                 const connectionEntries =
@@ -1845,8 +1843,22 @@ module.exports = cds.service.impl(async function () {
 
     //                 for (const entry of connectionEntries || []) {
 
+    //                     /*
+    //                      * Optional technical-user filtering
+    //                      *
+    //                      * const userId = entry.userId?.trim();
+    //                      *
+    //                      * if (
+    //                      *     userId?.startsWith("sb-") ||
+    //                      *     userId === "UNKNOWN_USER"
+    //                      * ) {
+    //                      *     continue;
+    //                      * }
+    //                      */
+
     //                     entry.subaccount =
     //                         subaccountName;
+
     //                     entries.push(entry);
     //                 }
 
@@ -1855,24 +1867,19 @@ module.exports = cds.service.impl(async function () {
     //                 failedConnections.push({
     //                     api: "AUDIT_LOG",
     //                     operation: "GET_USER_AUDIT_LOGS",
-    //                     subaccountId: connection.subaccountId,
+    //                     subaccountId: cleanSubaccountId,
     //                     error: connectionError.message
     //                 });
-    //                 /*
-    //                  * Continue with other connections instead of
-    //                  * failing the complete synchronization.
-    //                  */
+
+
     //                 continue;
     //             }
     //         }
-
-    //         /*
-    //          * No new records
-    //          */
     //         const finalSyncStatus =
     //             failedConnections.length > 0
     //                 ? "PARTIAL_SUCCESS"
     //                 : "SUCCESS";
+
     //         if (!entries || entries.length === 0) {
 
     //             const message =
@@ -1880,16 +1887,14 @@ module.exports = cds.service.impl(async function () {
     //                     ? `Synchronization completed with ${failedConnections.length} failure(s). No new User Audit records were processed.`
     //                     : "Synchronization completed. No new User Audit records found.";
 
-    //             await UPDATE(ReportSyncStatus)
-    //                 .set({
-    //                     lastRunAt: timeTo,
-    //                     lastSyncStatus: finalSyncStatus,
-    //                     isRunning: false,
-    //                     message: message
-    //                 })
-    //                 .where({
-    //                     reportName: "USER_AUDIT"
-    //                 });
+    //             await UPSERT.into(ReportSyncStatus).entries({
+    //                 reportName: "USER_AUDIT",
+    //                 lastRunAt: timeTo,
+    //                 lastSyncStatus: finalSyncStatus,
+    //                 isRunning: false,
+    //                 ID: syncStatusId,
+    //                 message: message
+    //             });
 
     //             return {
     //                 status: finalSyncStatus,
@@ -1899,32 +1904,10 @@ module.exports = cds.service.impl(async function () {
     //             };
     //         }
 
-    //         /*
-    //          * Debug: show first 5 records
-    //          */
-    //         // entries.slice(0, 5).forEach((entry, index) => {
-
-    //         //     console.log(
-    //         //         `Final User Audit Record ${index + 1}:`,
-    //         //         JSON.stringify(entry, null, 2)
-    //         //     );
-
-    //         // });
-
-    //         /*
-    //          * Insert new records
-    //          */
     //         await INSERT
     //             .into(UserAuditReport)
     //             .entries(entries);
 
-    //         // console.log(
-    //         //     `${entries.length} User Audit records inserted into HANA`
-    //         // );
-
-    //         /*
-    //          * Update sync status
-    //          */
     //         const message =
     //             `Synchronization completed. ` +
     //             `${entries.length} User Audit records processed.` +
@@ -1934,17 +1917,22 @@ module.exports = cds.service.impl(async function () {
     //                     : ""
     //             );
 
-    //         await UPDATE(ReportSyncStatus)
-    //             .set({
-    //                 lastSyncAt: timeTo,
-    //                 lastRunAt: timeTo,
-    //                 lastSyncStatus: finalSyncStatus,
-    //                 isRunning: false,
-    //                 message: message
-    //             })
-    //             .where({
-    //                 reportName: "USER_AUDIT"
-    //             });
+    //         await UPSERT.into(ReportSyncStatus).entries({
+    //             reportName: "USER_AUDIT",
+    //             lastSyncAt: timeTo,
+    //             lastRunAt: timeTo,
+    //             lastSyncStatus: finalSyncStatus,
+    //             isRunning: false,
+    //             ID: syncStatusId,
+    //             message: message
+    //         });
+
+    //         return {
+    //             status: finalSyncStatus,
+    //             message: message,
+    //             processedRecords: entries.length,
+    //             failures: failedConnections
+    //         };
 
     //     } catch (err) {
 
@@ -1953,293 +1941,294 @@ module.exports = cds.service.impl(async function () {
     //             err
     //         );
 
-    //         /*
-    //          * Mark synchronization as FAILED
-    //          */
-    //         await UPDATE(ReportSyncStatus)
-    //             .set({
-    //                 lastRunAt: formatAuditTimestamp(new Date()),
-    //                 lastSyncStatus: "FAILED",
-    //                 isRunning: false,
-    //                 message: err.message
-    //             })
-    //             .where({
-    //                 reportName: "USER_AUDIT"
-    //             });
+    //         await UPSERT.into(ReportSyncStatus).entries({
+    //             reportName: "USER_AUDIT",
+    //             lastRunAt: formatAuditTimestamp(new Date()),
+    //             lastSyncStatus: "FAILED",
+    //             isRunning: false,
+    //             ID: syncStatusId,
+    //             message: err.message
+    //         });
 
     //         throw err;
     //     }
     // });
-    this.on("syncUserAuditLogs", async () => {
-        const syncStatus = await SELECT.one
-            .from(ReportSyncStatus)
-            .where({
-                reportName: "USER_AUDIT"
-            });
-
-        const syncStatusId = syncStatus?.ID || cds.utils.uuid();
-
-        await UPSERT.into(ReportSyncStatus).entries({
-            ID: syncStatusId,
-            reportName: "USER_AUDIT",
-            lastSyncStatus: "RUNNING",
-            isRunning: true
+ this.on("syncUserAuditLogs", async () => {
+    const syncStatus = await SELECT.one
+        .from(ReportSyncStatus)
+        .where({
+            reportName: "USER_AUDIT"
         });
-
-        try {
-
-            let failedConnections = [];
-
-            const connections = await SELECT
-                .from(BTPConnection)
-                .where({
-                    serviceType: "AUDIT_LOG",
-                    active: true
-                });
-
-            if (!connections || connections.length === 0) {
-
-                const timeTo = formatAuditTimestamp(new Date());
-
-                await UPSERT.into(ReportSyncStatus).entries({
-                    reportName: "USER_AUDIT",
-                    lastRunAt: timeTo,
-                    lastSyncStatus: "SUCCESS",
-                    isRunning: false,
-                    ID: syncStatusId,
-                    message: "No active Audit Log connections found."
-                });
-
-                return "No active Audit Log connections found";
-            }
-
-            const subaccountIds = [
-                ...new Set(
-                    connections
-                        .map(connection =>
-                            connection.subaccountId?.trim()
-                        )
-                        .filter(Boolean)
-                )
-            ];
-
-            const accountsConnection = await SELECT.one
-                .from(BTPConnection)
-                .where({
-                    serviceType: "ACCOUNTS",
-                    active: true
-                });
-
-            let subaccountMap = new Map();
-
-            for (const subaccountId of subaccountIds) {
-
-                subaccountMap.set(
-                    subaccountId,
-                    subaccountId
-                );
-            }
-
-            if (accountsConnection) {
-
-                try {
-
-                    const accountsToken =
-                        await oAuthManager.getToken(
-                            accountsConnection
-                        );
-
-                    const {
-                        subaccountMap: fetchedMap,
-                        failures: accountFailures
-                    } = await fetchSubaccount(
-                        accountsConnection.apiBaseUrl,
-                        accountsToken,
-                        subaccountIds
-                    );
-
-                    for (const [
-                        subaccountId,
-                        subaccountDetails
-                    ] of fetchedMap) {
-
-                        subaccountMap.set(
-                            subaccountId,
-                            subaccountDetails.subdomain
-                        );
-                    }
-
-                    failedConnections.push(
-                        ...(accountFailures || [])
-                    );
-
-                } catch (err) {
-
-                    failedConnections.push({
-                        api: "ACCOUNTS",
-                        operation: "OAUTH",
-                        subaccountId: null,
-                        error: err.message
-                    });
-
-                    console.warn(
-                        "Could not fetch subaccount names. Using subaccount IDs instead.",
-                        err.message
-                    );
-                }
-            }
-
-            const timeFrom = syncStatus?.lastSyncAt
-                ? formatAuditTimestamp(syncStatus.lastSyncAt)
-                : formatAuditTimestamp(
-                    "2026-08-01T00:00:00Z"
-                );
-
-            const timeTo = formatAuditTimestamp(new Date());
-
-            const entries = [];
-
-            for (const connection of connections) {
-
-                const cleanSubaccountId = connection.subaccountId?.trim();
-
-                const subaccountName =
-                    subaccountMap.get(
-                        cleanSubaccountId
-                    ) ||
-                    cleanSubaccountId;
-
-                try {
-
-                    const token = await oAuthManager.getToken(connection);
-
-                    if (!token) {
-
-                        throw new Error(
-                            "Audit Log OAuth token was not returned."
-                        );
-                    }
-
-                    const connectionEntries =
-                        await fetchUserAuditLogs(
-                            connection,
-                            token,
-                            timeFrom,
-                            timeTo
-                        );
-
-                    for (const entry of connectionEntries || []) {
-
-                        /*
-                         * Optional technical-user filtering
-                         *
-                         * const userId = entry.userId?.trim();
-                         *
-                         * if (
-                         *     userId?.startsWith("sb-") ||
-                         *     userId === "UNKNOWN_USER"
-                         * ) {
-                         *     continue;
-                         * }
-                         */
-
-                        entry.subaccount =
-                            subaccountName;
-
-                        entries.push(entry);
-                    }
-
-                } catch (connectionError) {
-
-                    failedConnections.push({
-                        api: "AUDIT_LOG",
-                        operation: "GET_USER_AUDIT_LOGS",
-                        subaccountId: cleanSubaccountId,
-                        error: connectionError.message
-                    });
-
-
-                    continue;
-                }
-            }
-            const finalSyncStatus =
-                failedConnections.length > 0
-                    ? "PARTIAL_SUCCESS"
-                    : "SUCCESS";
-
-            if (!entries || entries.length === 0) {
-
-                const message =
-                    failedConnections.length > 0
-                        ? `Synchronization completed with ${failedConnections.length} failure(s). No new User Audit records were processed.`
-                        : "Synchronization completed. No new User Audit records found.";
-
-                await UPSERT.into(ReportSyncStatus).entries({
-                    reportName: "USER_AUDIT",
-                    lastRunAt: timeTo,
-                    lastSyncStatus: finalSyncStatus,
-                    isRunning: false,
-                    ID: syncStatusId,
-                    message: message
-                });
-
-                return {
-                    status: finalSyncStatus,
-                    message: message,
-                    processedRecords: 0,
-                    failures: failedConnections
-                };
-            }
-
-            await INSERT
-                .into(UserAuditReport)
-                .entries(entries);
-
-            const message =
-                `Synchronization completed. ` +
-                `${entries.length} User Audit records processed.` +
-                (
-                    failedConnections.length > 0
-                        ? ` ${failedConnections.length} API failure(s) detected.`
-                        : ""
-                );
-
+ 
+        const syncStatusId =syncStatus?.ID || cds.utils.uuid();
+ 
+    await UPSERT.into(ReportSyncStatus).entries({
+        ID: syncStatusId,
+        reportName: "USER_AUDIT",
+        lastSyncStatus: "RUNNING",
+        isRunning: true
+    });
+ 
+    try {
+ 
+        let failedConnections = [];
+ 
+        const connections = await SELECT
+            .from(BTPConnection)
+            .where({
+                serviceType: "AUDIT_LOG",
+                active: true
+            });
+ 
+        if (!connections || connections.length === 0) {
+ 
+            const timeTo =formatAuditTimestamp(new Date());
+ 
             await UPSERT.into(ReportSyncStatus).entries({
                 reportName: "USER_AUDIT",
-                lastSyncAt: timeTo,
+                lastRunAt: timeTo,
+                lastSyncStatus: "SUCCESS",
+                isRunning: false,
+                ID: syncStatusId,
+                message: "No active Audit Log connections found."
+            });
+ 
+            return "No active Audit Log connections found";
+        }
+ 
+        const subaccountIds = [
+            ...new Set(
+                connections
+                    .map(connection =>
+                        connection.subaccountId?.trim()
+                    )
+                    .filter(Boolean)
+            )
+        ];
+ 
+        const accountsConnection = await SELECT.one
+            .from(BTPConnection)
+            .where({
+                serviceType: "ACCOUNTS",
+                active: true
+            });
+ 
+        let subaccountMap = new Map();
+ 
+        for (const subaccountId of subaccountIds) {
+ 
+            subaccountMap.set(
+                subaccountId,
+                subaccountId
+            );
+        }
+ 
+        if (accountsConnection) {
+ 
+            try {
+ 
+                const accountsToken =
+                    await oAuthManager.getToken(
+                        accountsConnection
+                    );
+ 
+                const {
+                    subaccountMap: fetchedMap,
+                    failures: accountFailures
+                } = await fetchSubaccount(
+                    accountsConnection.apiBaseUrl,
+                    accountsToken,
+                    subaccountIds
+                );
+ 
+                for (const [
+                    subaccountId,
+                    subaccountDetails
+                ] of fetchedMap) {
+ 
+                    subaccountMap.set(
+                        subaccountId,
+                        subaccountDetails.subdomain
+                    );
+                }
+ 
+                failedConnections.push(
+                    ...(accountFailures || [])
+                );
+ 
+            } catch (err) {
+ 
+                failedConnections.push({
+                    api: "ACCOUNTS",
+                    operation: "OAUTH",
+                    subaccountId: null,
+                    error: err.message
+                });
+ 
+                console.warn(
+                    "Could not fetch subaccount names. Using subaccount IDs instead.",
+                    err.message
+                );
+            }
+        }
+ 
+        const timeFrom = syncStatus?.lastSyncAt
+            ? formatAuditTimestamp(syncStatus.lastSyncAt)
+            : formatAuditTimestamp(
+                "2026-08-01T00:00:00Z"
+            );
+ 
+        const timeTo =formatAuditTimestamp(new Date());
+ 
+        const entries = [];
+ 
+        for (const connection of connections) {
+ 
+            const cleanSubaccountId =connection.subaccountId?.trim();
+ 
+            const subaccountName =
+                subaccountMap.get(
+                    cleanSubaccountId
+                ) ||
+                cleanSubaccountId;
+ 
+            try {
+ 
+                const token =await oAuthManager.getToken(connection);
+ 
+                if (!token) {
+ 
+                    throw new Error(
+                        "Audit Log OAuth token was not returned."
+                    );
+                }
+ 
+                const connectionEntries =
+                    await fetchUserAuditLogs(
+                        connection,
+                        token,
+                        timeFrom,
+                        timeTo
+                    );
+ 
+                for (const entry of connectionEntries || []) {
+ 
+                    /*
+                     * Optional technical-user filtering
+                     */
+                     const userId = entry.userId?.trim();
+ 
+                const normalizedUserId = userId?.toLowerCase();
+ 
+                if (
+                    !normalizedUserId ||
+                    normalizedUserId === "anonymous" ||
+                    normalizedUserId === "unknown_user" ||
+                   // normalizedUserId.startsWith("sb-") ||
+                    normalizedUserId.includes("cn=com.sap.ca.ids")
+                ) {
+                    continue;
+                }
+                                   
+ 
+                    entry.subaccount =
+                        subaccountName;
+ 
+                    entries.push(entry);
+                }
+ 
+            } catch (connectionError) {
+ 
+                failedConnections.push({
+                    api: "AUDIT_LOG",
+                    operation: "GET_USER_AUDIT_LOGS",
+                    subaccountId: cleanSubaccountId,
+                    error: connectionError.message
+                });
+ 
+ 
+                continue;
+            }
+        }
+        const finalSyncStatus =
+            failedConnections.length > 0
+                ? "PARTIAL_SUCCESS"
+                : "SUCCESS";
+ 
+        if (!entries || entries.length === 0) {
+ 
+            const message =
+                failedConnections.length > 0
+                    ? `Synchronization completed with ${failedConnections.length} failure(s). No new User Audit records were processed.`
+                    : "Synchronization completed. No new User Audit records found.";
+ 
+            await UPSERT.into(ReportSyncStatus).entries({
+                reportName: "USER_AUDIT",
                 lastRunAt: timeTo,
                 lastSyncStatus: finalSyncStatus,
                 isRunning: false,
                 ID: syncStatusId,
                 message: message
             });
-
+ 
             return {
                 status: finalSyncStatus,
                 message: message,
-                processedRecords: entries.length,
+                processedRecords: 0,
                 failures: failedConnections
             };
-
-        } catch (err) {
-
-            console.error(
-                "User Audit Log synchronization failed:",
-                err
-            );
-
-            await UPSERT.into(ReportSyncStatus).entries({
-                reportName: "USER_AUDIT",
-                lastRunAt: formatAuditTimestamp(new Date()),
-                lastSyncStatus: "FAILED",
-                isRunning: false,
-                ID: syncStatusId,
-                message: err.message
-            });
-
-            throw err;
         }
-    });
+ 
+        await INSERT
+            .into(UserAuditReport)
+            .entries(entries);
+ 
+        const message =
+            `Synchronization completed. ` +
+            `${entries.length} User Audit records processed.` +
+            (
+                failedConnections.length > 0
+                    ? ` ${failedConnections.length} API failure(s) detected.`
+                    : ""
+            );
+ 
+        await UPSERT.into(ReportSyncStatus).entries({
+            reportName: "USER_AUDIT",
+            lastSyncAt: timeTo,
+            lastRunAt: timeTo,
+            lastSyncStatus: finalSyncStatus,
+            isRunning: false,
+            ID: syncStatusId,
+            message: message
+        });
+ 
+        return {
+            status: finalSyncStatus,
+            message: message,
+            processedRecords: entries.length,
+            failures: failedConnections
+        };
+ 
+    } catch (err) {
+ 
+        console.error(
+            "User Audit Log synchronization failed:",
+            err
+        );
+ 
+        await UPSERT.into(ReportSyncStatus).entries({
+            reportName: "USER_AUDIT",
+            lastRunAt: formatAuditTimestamp(new Date()),
+            lastSyncStatus: "FAILED",
+            isRunning: false,
+            ID: syncStatusId,
+            message: err.message
+        });
+ 
+        throw err;
+    }
+});
+ 
     this.on("scheduledSyncRoleLogs", async (req) => {
         return await this.send("syncRoleLogs", {});
     });

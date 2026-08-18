@@ -35,6 +35,7 @@ service auditLoggingAndReportingService {
         projection on db.ServiceAuditReport
         excluding {
             serviceInstanceId,
+            changedBy,
             subaccountId
         };
 
@@ -243,13 +244,13 @@ service auditLoggingAndReportingService {
         group by
             createdBy;
 
-    @readonly
-    entity ServiceChangedByVH     as
-        select from db.ServiceAuditReport {
-            key changedBy
-        }
-        group by
-            changedBy;
+    // @readonly
+    // entity ServiceChangedByVH     as
+    //     select from db.ServiceAuditReport {
+    //         key changedBy
+    //     }
+    //     group by
+    //         changedBy;
 
 
     @readonly

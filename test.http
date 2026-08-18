@@ -146,3 +146,22 @@ Content-Type: application/json
     "modifiedBy": null,
     "reportName": "ROLE_AUDIT"
 }
+
+### USer audit report
+PUT  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('11111111-1111-4111-8111-111111111111')
+Content-Type: application/json
+
+{
+    "ID": "11111111-1111-4111-8111-111111111111",
+    "createdAt": null,
+    "createdBy": null,
+    "isRunning": false,
+    "lastRunAt": null,
+    "lastSyncAt": "2026-08-01T00:00:00Z",
+    "lastSyncBy": null,
+    "lastSyncStatus": "SUCCESS",
+    "message": "Not synchronized yet",
+    "modifiedAt": null,
+    "modifiedBy": null,
+    "reportName": "USER_AUDIT"
+}
