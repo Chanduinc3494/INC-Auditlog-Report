@@ -139,13 +139,6 @@ annotate service.ConfigurationReport with @(
         },
         {
             $Type : 'UI.DataField',
-            Value : userRole,
-            Criticality : roleCriticality,
-            CriticalityRepresentation : #WithoutIcon,
-            ![@HTML5.CssDefaults] : { width : '11%' }
-        },
-        {
-            $Type : 'UI.DataField',
             Value : eventType,
             ![@HTML5.CssDefaults] : { width : '11%' }
         },

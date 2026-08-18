@@ -19,9 +19,22 @@ service auditLoggingAndReportingService {
             virtual statusCriticality : Integer
         };
 
+    // entity ConfigurationReport    as
+    //     projection on db.ConfigurationReport  {
+    //         *,
+    //         virtual roleCriticality : Integer
+    //     };
     entity ConfigurationReport    as
         projection on db.ConfigurationReport {
-            *,
+            ID,
+            system,
+            userId,
+            eventType,
+            btpService,
+            subAccount,
+            region,
+            actionPerformed,
+            timestamp,
             virtual roleCriticality : Integer
         };
 
