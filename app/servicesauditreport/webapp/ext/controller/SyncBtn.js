@@ -1,89 +1,9 @@
-// sap.ui.define([
-//     "sap/m/MessageToast",
-//     "sap/m/MessageBox"
-// ], function (MessageToast, MessageBox) {
-//     "use strict";
 
-//     return {
-
-//         SyncServiceLogs: async function (oContext, aSelectedContexts) {
-
-//             try {
-
-//                 // --------------------------------------------------
-//                 // 1. Call CAP action
-//                 // --------------------------------------------------
-
-//                 const response = await fetch(
-//                     "/odata/v4/audit-logging-and-reporting/syncServiceLogs",
-//                     {
-//                         method: "POST",
-//                         headers: {
-//                             "Content-Type": "application/json"
-//                         },
-//                         body: JSON.stringify({})
-//                     }
-//                 );
-
-//                 if (!response.ok) {
-//                     const errorText = await response.text();
-//                     throw new Error(
-//                         errorText || "Synchronization failed."
-//                     );
-//                 }
-
-//                 // --------------------------------------------------
-//                 // 2. Read response
-//                 // --------------------------------------------------
-
-//                 const result = await response.json();
-
-//                 MessageToast.show(
-//                     result.value ||
-//                     "Synchronization completed successfully."
-//                 );
-
-//                 // --------------------------------------------------
-//                 // 3. Refresh Fiori Elements List Report
-//                 // --------------------------------------------------
-
-//                 const oPage = sap.ui.getCore().byId(
-//                     "servicesauditreport::ServiceAuditReportsList"
-//                 );
-
-//                 if (!oPage) {
-//                     console.error(
-//                         "Service Audit List Report page not found."
-//                     );
-//                     return;
-//                 }
-
-//                 const oModel = oPage.getModel();
-
-//                 if (oModel) {
-//                     oModel.refresh("$auto");
-//                 }
-
-//             } catch (err) {
-
-//                 console.error(
-//                     "Synchronization error:",
-//                     err
-//                 );
-
-//                 MessageBox.error(
-//                     err.message ||
-//                     "Synchronization failed."
-//                 );
-//             }
-//         }
-//     };
-// });
 sap.ui.define([
     "sap/m/MessageToast",
     "sap/m/MessageBox",
-     "sap/m/BusyDialog"
-], function (MessageToast, MessageBox,BusyDialog) {
+    "sap/m/BusyDialog"
+], function (MessageToast, MessageBox, BusyDialog) {
     "use strict";
 
     return {
@@ -94,7 +14,7 @@ sap.ui.define([
                 text: "Fetching data..."
             });
             try {
-                  oBusyDialog.open();
+                oBusyDialog.open();
                 // --------------------------------------------------
                 // 1. Get the List Report page
                 // --------------------------------------------------
@@ -137,7 +57,7 @@ sap.ui.define([
 
                 const result =
                     oOperation.getBoundContext().getObject();
-                 if (
+                if (
                     result?.failures &&
                     result.failures.length > 0
                 ) {
@@ -152,48 +72,72 @@ sap.ui.define([
                         console.error(
                             `[${failure.api || "UNKNOWN API"}] ` +
                             `[${failure.operation || "UNKNOWN OPERATION"}] ` +
-                            `${
-                                failure.environment
-                                    ? `[${failure.environment}] `
-                                    : ""
+                            `${failure.environment
+                                ? `[${failure.environment}] `
+                                : ""
                             }` +
-                            `Subaccount: ${
-                                failure.subaccountId || "N/A"
+                            `Subaccount: ${failure.subaccountId || "N/A"
                             } ` +
-                            `Error: ${
-                                failure.error || "Unknown error"
+                            `Error: ${failure.error || "Unknown error"
                             }`
                         );
 
                     });
                 }
-                if (
-                    result?.status === "PARTIAL_SUCCESS"
-                ) {
+
+
+                // handle Message for sync
+                if (result?.status === "RUNNING") {
+
+                    MessageBox.information(
+                        result.message ||
+                        "Service synchronization is already running.",
+                        {
+                            title: "Synchronization In Progress"
+                        }
+                    );
+
+                } else if (result?.status === "PARTIAL_SUCCESS") {
 
                     MessageBox.warning(
-                        result?.message ||
+                        result.message ||
                         "Service synchronization completed with some failures.",
                         {
-                            title:
-                                "Service Synchronization Completed with Warnings"
+                            title: "Service Synchronization Completed with Warnings"
+                        }
+                    );
+
+                    oModel.refresh("$auto");
+
+                } else if (result?.status === "SUCCESS") {
+
+                    MessageToast.show(
+                        result.message ||
+                        "Service synchronization completed successfully."
+                    );
+
+                    oModel.refresh("$auto");
+
+                } else if (result?.status === "FAILED") {
+
+                    MessageBox.error(
+                        result.message ||
+                        "Service synchronization failed.",
+                        {
+                            title: "Service Synchronization Failed"
                         }
                     );
 
                 } else {
 
-                    MessageToast.show(
-                        result?.message ||
-                        "Service synchronization completed successfully."
+                    MessageBox.warning(
+                        result.message ||
+                        "Unexpected synchronization status received.",
+                        {
+                            title: "Unexpected Synchronization Status"
+                        }
                     );
                 }
-                
-
-                // --------------------------------------------------
-                // 6. Refresh List Report
-                // --------------------------------------------------
-
-                oModel.refresh("$auto");
 
             } catch (err) {
 
@@ -202,7 +146,7 @@ sap.ui.define([
                     "Synchronization failed."
                 );
 
-            }finally {
+            } finally {
 
                 // Always close BusyDialog
                 oBusyDialog.close();

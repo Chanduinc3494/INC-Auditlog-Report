@@ -157,7 +157,7 @@ Content-Type: application/json
     "createdBy": null,
     "isRunning": false,
     "lastRunAt": null,
-    "lastSyncAt": "2026-08-01T00:00:00Z",
+    "lastSyncAt": "2026-08-17T00:00:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",

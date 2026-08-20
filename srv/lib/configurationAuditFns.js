@@ -190,393 +190,6 @@ function extractHandle(pagingHeader) {
         : null;
 }
 
-// function getBtpService(object) {
-//     const tableName = String(
-//         object.tableName ||
-//         object.type ||
-//         object.table ||
-//         ""
-//     ).toLowerCase();
-
-//     if (tableName === "xsrolecollections") {
-//         return "Role Collection";
-//     }
-
-//     if (tableName === "xsrolecollection2role") {
-//         return "Role Assignment";
-//     }
-
-//     if (tableName === "xs_rolecollection2user") {
-//         return "User Role Assignment";
-//     }
-
-//     if (tableName === "users") {
-//         return "User";
-//     }
-
-//     if (
-//         tableName === "tenant provision" ||
-//         tableName === "tenant de-provision"
-//     ) {
-//         return "Tenant";
-//     }
-
-//     if (
-//         tableName.includes("rootsubscritpioncustomauditingentitylistener") ||
-//         tableName.includes("rootsubscriptioncustomauditingentitylistener")
-//     ) {
-//         return "Subscription";
-//     }
-
-//     return (
-//         object.tableName ||
-//         object.type ||
-//         object.table ||
-//         "Configuration"
-//     );
-// }
-
-// function getActionPerformed(
-//     btpService,
-//     crudType,
-//     attr,
-//     object
-// ) {
-//     const field = String(
-//         attr?.name || ""
-//     ).toLowerCase();
-
-//     if (btpService === "Role Collection") {
-
-//         const roleCollection =
-//             object?.name ||
-//             "Unknown Role Collection";
-
-//         if (crudType === "CREATE") {
-//             return `Role Collection "${roleCollection}" created`;
-//         }
-
-//         if (crudType === "DELETE") {
-//             return `Role Collection "${roleCollection}" deleted`;
-//         }
-
-//         if (crudType === "UPDATE") {
-
-//             if (field === "description") {
-//                 return `Role Collection "${roleCollection}" description updated`;
-//             }
-
-//             if (field === "creation_type") {
-//                 return `Role Collection "${roleCollection}" creation type updated`;
-//             }
-
-//             return `Role Collection "${roleCollection}" ${field || "configuration"} updated`;
-//         }
-//     }
-
-//     if (btpService === "Role Assignment") {
-
-//         const role =
-//             object?.role_name ||
-//             "Unknown Role";
-
-//         const roleCollection =
-//             object?.rolecollection_name ||
-//             "Unknown Role Collection";
-
-//         if (crudType === "CREATE") {
-//             return `Role "${role}" assigned to Role Collection "${roleCollection}"`;
-//         }
-
-//         if (crudType === "DELETE") {
-//             return `Role "${role}" removed from Role Collection "${roleCollection}"`;
-//         }
-
-//         if (crudType === "UPDATE") {
-//             return `Role "${role}" assignment updated in Role Collection "${roleCollection}"`;
-//         }
-//     }
-
-//     if (btpService === "User Role Assignment") {
-
-//         const roleCollection =
-//             object?.rolecollection_name ||
-//             "Unknown Role Collection";
-
-//         const user =
-//             object?.user_name ||
-//             object?.user ||
-//             "User";
-
-//         if (crudType === "CREATE") {
-//             return `${user} added to Role Collection "${roleCollection}"`;
-//         }
-
-//         if (crudType === "DELETE") {
-//             return `${user} removed from Role Collection "${roleCollection}"`;
-//         }
-
-//         if (crudType === "UPDATE") {
-//             return `${user} role assignment updated in Role Collection "${roleCollection}"`;
-//         }
-//     }
-
-//     if (btpService === "User") {
-
-//         if (crudType === "CREATE") {
-//             return "User created";
-//         }
-
-//         if (crudType === "DELETE") {
-//             return "User deleted";
-//         }
-
-//         if (crudType === "UPDATE") {
-
-//             if (field === "email") {
-//                 return "User email updated";
-//             }
-
-//             if (field === "username") {
-//                 return "Username updated";
-//             }
-
-//             if (field === "first_name") {
-//                 return "User first name updated";
-//             }
-
-//             if (field === "last_name") {
-//                 return "User last name updated";
-//             }
-
-//             return `User ${field || "details"} updated`;
-//         }
-//     }
-
-//     if (btpService === "Subscription") {
-
-//         if (crudType === "CREATE") {
-//             return "Subscription created";
-//         }
-
-//         if (crudType === "DELETE") {
-//             return "Subscription deleted";
-//         }
-
-//         if (crudType === "UPDATE") {
-//             return "Subscription updated";
-//         }
-//     }
-
-//     if (btpService === "Tenant") {
-
-//         if (crudType === "PROVISION") {
-//             return "Tenant provisioned";
-//         }
-
-//         if (crudType === "DE-PROVISION") {
-//             return "Tenant de-provisioned";
-//         }
-//     }
-
-//     if (crudType === "CREATE") {
-//         return `${btpService} created`;
-//     }
-
-//     if (crudType === "DELETE") {
-//         return `${btpService} deleted`;
-//     }
-
-//     if (crudType === "UPDATE") {
-//         return `${btpService} ${field || "configuration"} updated`;
-//     }
-
-//     return `${btpService} configuration changed`;
-// }
-
-// function mapConfigurationAuditLog(log) {
-//     if (!log) {
-//         return [];
-//     }
-
-//     let message = log.message;
-
-//     try {
-//         if (typeof message === "string") {
-//             message = JSON.parse(message);
-//         }
-//     } catch {
-//         return [];
-//     }
-
-//     if (!message) {
-//         return [];
-//     }
-
-//     const object =
-//         message.object?.id ||
-//         message.object ||
-//         {};
-
-//     const attributes =
-//         Array.isArray(message.attributes)
-//             ? message.attributes
-//             : [];
-
-//     const userId =
-//         log.user
-//             ? String(log.user)
-//                 .split("/")
-//                 .pop()
-//             : "";
-
-//     const btpService =
-//         getBtpService(object);
-
-//     const crudType =
-//         String(
-//             object.crudType ||
-//             object.operation ||
-//             ""
-//         ).toUpperCase();
-
-//     const timestamp =
-//         message.time ||
-//         log.time ||
-//         null;
-
-//     const base = {
-//         system: "BTP",
-//         messageId:log.message_uuid,
-//         userId,
-//         userRole: "",
-//         btpService,
-//         timestamp
-//     };
-
-//     if (crudType === "CREATE") {
-
-//         return [{
-//             ...base,
-
-//             eventType: "CREATE",
-
-//             actionPerformed:
-//                 getActionPerformed(
-//                     btpService,
-//                     "CREATE",
-//                     null,
-//                     object
-//                 )
-//         }];
-//     }
-
-//     if (crudType === "DELETE") {
-
-//         return [{
-//             ...base,
-
-//             eventType: "DELETE",
-
-//             actionPerformed:
-//                 getActionPerformed(
-//                     btpService,
-//                     "DELETE",
-//                     null,
-//                     object
-//                 )
-//         }];
-//     }
-
-//     if (crudType === "UPDATE") {
-
-//         const entries = [];
-
-//         for (const attr of attributes) {
-
-//             if (!attr) {
-//                 continue;
-//             }
-
-//             const oldValue =
-//                 attr.old ?? "";
-
-//             const newValue =
-//                 attr.new ?? "";
-
-//             if (
-//                 String(oldValue) ===
-//                 String(newValue)
-//             ) {
-//                 continue;
-//             }
-
-//             entries.push({
-
-//                 ...base,
-
-//                 eventType: "UPDATE",
-
-//                 actionPerformed:
-//                     getActionPerformed(
-//                         btpService,
-//                         "UPDATE",
-//                         attr,
-//                         object
-//                     )
-//             });
-//         }
-
-//         return entries;
-//     }
-
-//     if (btpService === "Tenant") {
-
-//         const isDeProvision =
-//             String(
-//                 object.type || ""
-//             )
-//                 .toLowerCase()
-//                 .includes("de-provision");
-
-//         return [{
-
-//             ...base,
-
-//             eventType:
-//                 isDeProvision
-//                     ? "DE-PROVISION"
-//                     : "PROVISION",
-
-//             actionPerformed:
-//                 isDeProvision
-//                     ? "Tenant de-provisioned"
-//                     : "Tenant provisioned"
-//         }];
-//     }
-
-//     return [{
-
-//         ...base,
-
-//         eventType:
-//             crudType || "CHANGE",
-
-//         actionPerformed:
-//             getActionPerformed(
-//                 btpService,
-//                 crudType || "CHANGE",
-//                 null,
-//                 object
-//             )
-//     }];
-// }
-
-
-// module.exports = {
-//     fetchConfigurationAuditLogs,
-//     mapConfigurationAuditLog
-// };
 // configurationAuditMapper.js
 
 function normalizeString(value) {
@@ -921,20 +534,6 @@ function getAddUpdateRemove(oldValue, newValue) {
  * ---------------------------------------------------------
  * TOKEN VALIDITY
  * ---------------------------------------------------------
- *
- * Example:
- *
- * old:
- * {
- *   accessTokenValidity: -1,
- *   refreshTokenValidity: -1
- * }
- *
- * new:
- * {
- *   accessTokenValidity: 54275,
- *   refreshTokenValidity: 604800
- * }
  */
 function mapTokenValidity(attributes) {
     for (const attr of attributes) {
@@ -1009,8 +608,6 @@ function mapTokenValidity(attributes) {
  * ---------------------------------------------------------
  * TRUSTED DOMAIN
  * ---------------------------------------------------------
- *
- * name = iframedomains
  */
 function mapTrustedDomain(attributes) {
     for (const attr of attributes) {
@@ -1237,13 +834,6 @@ function findNestedValue(
  * ---------------------------------------------------------
  * SERVICE SUBSCRIPTION
  * ---------------------------------------------------------
- *
- * attributes[].new is JSON string.
- *
- * Example:
- * {
- *   "appName": "sap-identity-services-onboarding"
- * }
  */
 function getServiceAppName(attributes) {
     for (const attr of attributes) {
@@ -1264,74 +854,6 @@ function getServiceAppName(attributes) {
     return "";
 }
 
-
-// function getServiceFailureReason(attributes) {
-//     for (const attr of attributes) {
-//         const newValue =
-//             parseJsonValue(attr?.new);
-
-//         if (
-//             newValue &&
-//             typeof newValue === "object"
-//         ) {
-//             const stateDetails =
-//                 normalizeString(
-//                     newValue.stateDetails
-//                 );
-
-//             const errorDetails =
-//                 normalizeString(
-//                     newValue.errorDetails
-//                 );
-
-//             if (
-//                 stateDetails.toLowerCase()
-//                     .includes("failed")
-//             ) {
-//                 return (
-//                     errorDetails ||
-//                     stateDetails
-//                 );
-//             }
-//         }
-//     }
-
-//     return "";
-// }
-
-// function mapSubscription(
-//     attributes,
-//     eventType
-// ) {
-//     const appName =
-//         getServiceAppName(attributes);
-
-//     if (!appName) {
-//         return null;
-//     }
-
-//     const failureReason =
-//         getServiceFailureReason(
-//             attributes
-//         );
-
-//     if (failureReason) {
-//         return {
-//             btpService: "Subscription",
-//             eventType,
-//             actionPerformed:
-//                 `Service subscription failed: ` +
-//                 `${appName} — ${failureReason}`
-//         };
-//     }
-
-//     return {
-//         btpService: "Subscription",
-//         eventType,
-//         actionPerformed:
-//             `Service added: ${appName}`
-//     };
-// }
 function getServiceDetails(attributes) {
     for (const attr of attributes) {
         const newValue =
@@ -1347,7 +869,6 @@ function getServiceDetails(attributes) {
 
     return null;
 }
-
 
 function mapSubscription(
     attributes,
@@ -1488,183 +1009,7 @@ function getDestinationName(attributes) {
 
     return "";
 }
-// function getDestinationInfo(attributes) {
-//     const names = [];
-//     let isDeployment = false;
 
-//     for (const attr of attributes) {
-//         const newValue =
-//             parseJsonValue(attr?.new);
-
-//         if (!newValue) {
-//             continue;
-//         }
-
-//         // ------------------------------------------------
-//         // Deployment-created destinations
-//         // ------------------------------------------------
-//         if (
-//             Array.isArray(
-//                 newValue.configurations
-//             )
-//         ) {
-//             isDeployment = true;
-
-//             for (
-//                 const configuration
-//                 of newValue.configurations
-//             ) {
-//                 const name =
-//                     normalizeString(
-//                         configuration?.Name ||
-//                         configuration?.name
-//                     );
-
-//                 if (name) {
-//                     names.push(name);
-//                 }
-//             }
-
-//             continue;
-//         }
-
-//         // ------------------------------------------------
-//         // Normal/user-created destination
-//         // ------------------------------------------------
-//         const name =
-//             normalizeString(
-//                 newValue.Name ||
-//                 newValue.name ||
-//                 attr?.name
-//             );
-
-//         if (name) {
-//             names.push(name);
-//         }
-//     }
-
-//     return {
-//         names: [...new Set(names)],
-//         isDeployment
-//     };
-// }
-
-
-// function mapDestination(
-//     attributes,
-//     eventType
-// ) {
-//     const {
-//         names: destinationNames,
-//         isDeployment
-//     } = getDestinationInfo(attributes);
-
-//     const prefix =
-//         isDeployment
-//             ? "Deployment"
-//             : "Destination";
-
-//     let actionPerformed;
-
-//     if (eventType === "CREATE") {
-
-//         if (destinationNames.length === 1) {
-
-//             actionPerformed =
-//                 isDeployment
-//                     ? `Deployment created destination: ${destinationNames[0]}`
-//                     : `Destination created: ${destinationNames[0]}`;
-
-//         } else if (
-//             destinationNames.length > 1
-//         ) {
-
-//             actionPerformed =
-//                 `Deployment created destinations: ` +
-//                 `${destinationNames.join(", ")}`;
-
-//         } else {
-
-//             actionPerformed =
-//                 isDeployment
-//                     ? "Deployment created destination"
-//                     : "Destination created";
-//         }
-
-//     } else if (eventType === "DELETE") {
-
-//         if (destinationNames.length === 1) {
-
-//             actionPerformed =
-//                 isDeployment
-//                     ? `Deployment deleted destination: ${destinationNames[0]}`
-//                     : `Destination deleted: ${destinationNames[0]}`;
-
-//         } else if (
-//             destinationNames.length > 1
-//         ) {
-
-//             actionPerformed =
-//                 `Deployment deleted destinations: ` +
-//                 `${destinationNames.join(", ")}`;
-
-//         } else {
-
-//             actionPerformed =
-//                 isDeployment
-//                     ? "Deployment deleted destination"
-//                     : "Destination deleted";
-//         }
-
-//     } else {
-
-//         const changedProperties =
-//             attributes
-//                 .filter(attr =>
-//                     normalizeString(attr?.name)
-//                         .toLowerCase() ===
-//                     "changedconfigurationpropertykeys"
-//                 )
-//                 .map(attr =>
-//                     normalizeString(attr?.new)
-//                 )
-//                 .filter(Boolean);
-
-//         if (destinationNames.length === 1) {
-
-//             actionPerformed =
-//                 isDeployment
-//                     ? `Deployment updated destination: ${destinationNames[0]}`
-//                     : `Destination updated: ${destinationNames[0]}`;
-
-//         } else if (
-//             destinationNames.length > 1
-//         ) {
-
-//             actionPerformed =
-//                 `Deployment updated destinations: ` +
-//                 `${destinationNames.join(", ")}`;
-
-//         } else {
-
-//             actionPerformed =
-//                 isDeployment
-//                     ? "Deployment updated destination"
-//                     : "Destination updated";
-//         }
-
-//         if (changedProperties.length > 0) {
-//             actionPerformed +=
-//                 `; Changed: ${changedProperties.join(", ")}`;
-//         }
-//     }
-
-//     return {
-//         btpService: "Destinations",
-//         eventType,
-//         actionPerformed
-//     };
-// }
 function getDestinationInfo(attributes) {
     const names = [];
     let isDeployment = false;
@@ -2058,106 +1403,7 @@ function mapUser(eventType) {
  * ---------------------------------------------------------
  * IDENTITY PROVIDER
  * ---------------------------------------------------------
- *
- * We don't just look at object.type.
- * We inspect old/new attributes.
  */
-// function mapIdentityProvider(
-//     attributes,
-//     context,
-//     eventType
-// ) {
-//     const changedAttributes =
-//         getChangedAttributes(
-//             attributes
-//         );
-
-//     if (changedAttributes.length === 0) {
-//         return null;
-//     }
-
-//     /*
-//      * Trust operation/status.
-//      */
-//     for (const attr of changedAttributes) {
-//         const name =
-//             normalizeString(attr?.name)
-//                 .toLowerCase();
-
-//         const oldValue =
-//             normalizeString(attr.old)
-//                 .toLowerCase();
-
-//         const newValue =
-//             normalizeString(attr.new)
-//                 .toLowerCase();
-
-//         if (
-//             name === "operation" ||
-//             name === "status"
-//         ) {
-//             if (
-//                 oldValue === "create" &&
-//                 newValue === "delete"
-//             ) {
-//                 return {
-//                     btpService:
-//                         "Identity Provider",
-
-//                     eventType: "DELETE",
-
-//                     actionPerformed:
-//                         "Identity provider trust deletion"
-//                 };
-//             }
-
-//             if (
-//                 newValue === "failed"
-//             ) {
-//                 return {
-//                     btpService:
-//                         "Identity Provider",
-
-//                     eventType,
-
-//                     actionPerformed:
-//                         "Identity provider trust operation failed"
-//                 };
-//             }
-//         }
-//     }
-
-//     /*
-//      * Complete configuration changed.
-//      */
-//     const completeChanged =
-//         changedAttributes.some(attr =>
-//             normalizeString(attr?.name)
-//                 .toLowerCase() === "complete"
-//         );
-
-//     if (completeChanged) {
-//         return {
-//             btpService:
-//                 "Identity Provider",
-
-//             eventType: "UPDATE",
-
-//             actionPerformed:
-//                 "Identity provider configuration updated"
-//         };
-//     }
-
-//     return {
-//         btpService:
-//             "Identity Provider",
-
-//         eventType,
-
-//         actionPerformed:
-//             "Identity provider configuration updated"
-//     };
-// }
 function getIdentityProviderChanges(attr) {
     const oldValue =
         parseJsonValue(attr?.old);
@@ -3186,62 +2432,13 @@ function consolidateConfigurationEntries(entries) {
 
     return result;
 }
-function deduplicateEntries(entries) {
-    const map = new Map();
 
-    for (const entry of entries) {
-        const key = [
-            entry.system,
-            entry.userId,
-            entry.userRole,
-            entry.eventType,
-            entry.btpService,
-            entry.subAccount,
-            entry.region,
-            entry.actionPerformed,
-            entry.timestamp instanceof Date
-                ? entry.timestamp.getTime()
-                : String(entry.timestamp)
-        ].join("|");
+/**
+ * -------------------------------------------------------
+ * De duplicate entries
+ * --------------------------------------------------------
+ */
 
-        if (!map.has(key)) {
-            map.set(key, entry);
-        }
-    }
-
-    return [...map.values()];
-}
-// function deduplicateConfigurationEntries(entries) {
-//     const unique = new Map();
-
-//     for (const entry of entries) {
-
-//         const timestamp =
-//             entry.timestamp instanceof Date
-//                 ? entry.timestamp.getTime()
-//                 : String(entry.timestamp || "");
-
-//         const key = [
-//             entry.system || "",
-//             entry.userId || "",
-//             entry.userRole || "",
-//             entry.eventType || "",
-//             entry.btpService || "",
-//             entry.subAccount || "",
-//             entry.region || "",
-//             entry.actionPerformed || "",
-//             timestamp
-//         ].join("|");
-
-//         if (!unique.has(key)) {
-//             unique.set(key, entry);
-//         }
-//     }
-
-//     return Array.from(unique.values());
-// }
-
-// applications
 function deduplicateConfigurationEntries(entries) {
     const unique = new Map();
 
@@ -3289,6 +2486,12 @@ function getSecondPrecisionTimestamp(timestamp) {
 
     return date.toISOString().slice(0, 19);
 }
+
+/**
+ * -------------------------------------------------------
+ * Applications
+ * --------------------------------------------------------
+ */
 function getApplicationInfo(attributes) {
     for (const attr of attributes) {
         const name =
@@ -3390,41 +2593,6 @@ function mapApplication(
         actionPerformed
     };
 }
-// function getApplicationNameFromUrl(destinationConfig) {
-//     if (!destinationConfig?.URL) {
-//         return null;
-//     }
-
-//     try {
-//         const hostname =
-//             new URL(destinationConfig.URL).hostname;
-
-//         const appPart =
-//             hostname.split(".cfapps.")[0];
-
-//         const marker =
-//             "integration-accelerator-";
-
-//         const index =
-//             appPart.indexOf(marker);
-
-//         if (index === -1) {
-//             return null;
-//         }
-
-//         const applicationPart =
-//             appPart.substring(
-//                 index + marker.length
-//             );
-
-//         // Remove trailing deployment hash
-//         return applicationPart
-//             .replace(/[a-f0-9]{8}$/i, "");
-            
-//     } catch {
-//         return null;
-//     }
-// }
 function getApplicationNameFromUrl(
     destinationConfig
 ) {
@@ -3474,6 +2642,11 @@ function getApplicationNameFromUrl(
     }
 }
 
+/**
+ * -------------------------------------------------------
+ * Filter
+ * --------------------------------------------------------
+ */
 function filterConfigurationEntries(entries) {
 
     const excludedServices = new Set([
@@ -3494,6 +2667,7 @@ function filterConfigurationEntries(entries) {
         return !excludedServices.has(service);
     });
 }
+
 module.exports = {
     mapConfigurationAuditLog,
     parseMessage,

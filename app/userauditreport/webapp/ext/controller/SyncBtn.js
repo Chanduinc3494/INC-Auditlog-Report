@@ -2,7 +2,7 @@ sap.ui.define([
     "sap/m/MessageToast",
     "sap/m/MessageBox",
     "sap/m/BusyDialog"
-], function(MessageToast,MessageBox,BusyDialog) {
+], function (MessageToast, MessageBox, BusyDialog) {
     'use strict';
 
     return {
@@ -12,19 +12,19 @@ sap.ui.define([
          * @param oContext the context of the page on which the event was fired. `undefined` for list report page.
          * @param aSelectedContexts the selected contexts of the table rows.
          */
-        SyncBtnFunction: async function(oContext, aSelectedContexts) {
+        SyncBtnFunction: async function (oContext, aSelectedContexts) {
             const oBusyDialog = new BusyDialog({
                 title: "Loading",
                 text: "Fetching data..."
             });
-              try {
+            try {
                 oBusyDialog.open();
                 // --------------------------------------------------
                 // 1. Get the List Report page
                 // --------------------------------------------------
 
                 const oPage = sap.ui.getCore().byId(
-                      "userauditreport::UserAuditReportsList"
+                    "userauditreport::UserAuditReportsList"
                 );
 
                 if (!oPage) {
@@ -56,7 +56,7 @@ sap.ui.define([
                 // 4. Execute CAP action
                 // --------------------------------------------------
 
-                await oOperation.execute();
+                await oOperation.execute("$direct");
 
                 // --------------------------------------------------
                 // 5. Read action response
@@ -64,7 +64,7 @@ sap.ui.define([
 
                 const oResult =
                     oOperation.getBoundContext().getObject();
-                   if (
+                if (
                     oResult?.failures &&
                     oResult.failures.length > 0
                 ) {
@@ -79,44 +79,66 @@ sap.ui.define([
                         console.error(
                             `[${failure.api || "UNKNOWN API"}] ` +
                             `[${failure.operation || "UNKNOWN OPERATION"}] ` +
-                            `Subaccount: ${
-                                failure.subaccountId || "N/A"
+                            `Subaccount: ${failure.subaccountId || "N/A"
                             } ` +
-                            `Error: ${
-                                failure.error || "Unknown error"
+                            `Error: ${failure.error || "Unknown error"
                             }`
                         );
 
                     });
                 }
-                 if (
-                    oResult?.status === "PARTIAL_SUCCESS"
-                ) {
+                // handle Message for Sync run
+                if (oResult?.status === "RUNNING") {
+
+                    MessageBox.information(
+                        oResult.message ||
+                        "User Audit synchronization is already running.",
+                        {
+                            title: "Synchronization In Progress"
+                        }
+                    );
+
+                } else if (oResult?.status === "PARTIAL_SUCCESS") {
 
                     MessageBox.warning(
-                        oResult?.message ||
+                        oResult.message ||
                         "User Audit synchronization completed with some failures.",
                         {
-                            title:
-                                "User Audit Synchronization Completed with Warnings"
+                            title: "User Audit Synchronization Completed with Warnings"
+                        }
+                    );
+
+                    oModel.refresh("$auto");
+
+                } else if (oResult?.status === "SUCCESS") {
+
+                    MessageToast.show(
+                        oResult.message ||
+                        "User Audit synchronization completed successfully."
+                    );
+
+                    oModel.refresh("$auto");
+
+                } else if (oResult?.status === "FAILED") {
+
+                    MessageBox.error(
+                        oResult.message ||
+                        "User Audit synchronization failed.",
+                        {
+                            title: "User Audit Synchronization Failed"
                         }
                     );
 
                 } else {
 
-                    MessageToast.show(
-                        oResult?.message ||
-                        "User Audit synchronization completed successfully."
+                    MessageBox.warning(
+                        oResult.message ||
+                        "Unexpected synchronization status received.",
+                        {
+                            title: "Unexpected Synchronization Status"
+                        }
                     );
                 }
-
-                
-
-                // --------------------------------------------------
-                // 6. Refresh List Report
-                // --------------------------------------------------
-
-                oModel.refresh("$auto");
 
             } catch (err) {
 
@@ -129,7 +151,7 @@ sap.ui.define([
                     err.message ||
                     "User Audit synchronization failed."
                 );
-            }finally {
+            } finally {
 
                 // Always close BusyDialog
                 oBusyDialog.close();
