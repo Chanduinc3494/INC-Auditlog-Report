@@ -15,8 +15,8 @@ entity UserAuditReport : cuid {
     userType       : String(1000);
     roleCollection : String(1000);
     fieldChanged   : String(100);
-    oldValue       : String(255);
-    newValue       : String(255);
+    oldValue       : LargeString;
+    newValue       : LargeString;
     performedBy    : String(100);
     userRole       : String(1000);
     status         : String(20);

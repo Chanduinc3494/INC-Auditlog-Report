@@ -1,0 +1,31 @@
+{
+  "xsappname": "auditlog-xsuaa",
+  "tenant-mode": "dedicated",
+  "description": "XSUAA configuration for Audit Log user lookup",
+  "scopes": [
+    {
+      "name": "scim.read",
+      "description": "Read users using SCIM"
+    },
+    {
+      "name": "zones.admin",
+      "description": "XSUAA zone administration"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "SCIM_Read",
+      "description": "Read XSUAA users",
+      "scope-references": [
+        "scim.read"
+      ]
+    },
+    {
+      "name": "Zones_Admin",
+      "description": "XSUAA zone administration",
+      "scope-references": [
+        "zones.admin"
+      ]
+    }
+  ]
+}
