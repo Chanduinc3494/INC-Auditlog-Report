@@ -1,7 +1,7 @@
 
  
 const axios = require("axios");
- 
+const {processUserConfigLog} = require("./ProcessUserConfigLogs");
 /* ========================================================================= */
 
 /*  HELPER FUNCTIONS                                                         */
@@ -978,10 +978,236 @@ async function fetchUserAuditLogs(connection, token, timeFrom, timeTo, subaccoun
     }
 
 }
- 
-module.exports = {
+async function fetchUserConfigLogs(
+    connection,
+    token,
+    timeFrom,
+    timeTo,
+    userMapping,
+    subaccountName
+) {
 
-    fetchUserAuditLogs
+    if (!connection) {
+        throw new Error(
+            "BTP Audit Log connection is missing."
+        );
+    }
+
+    if (!connection.apiBaseUrl) {
+        throw new Error(
+            `Audit Log API base URL is missing for ${
+                subaccountName || "Unknown"
+            }.`
+        );
+    }
+
+    if (!token) {
+        throw new Error(
+            `Audit Log OAuth token is missing for ${
+                subaccountName || "Unknown"
+            }.`
+        );
+    }
+
+    const baseUrl =
+        String(connection.apiBaseUrl)
+            .replace(/\/+$/, "");
+
+    const cleanToken =
+        String(token)
+            .replace(/^Bearer\s+/i, "");
+
+    const rawRecords = [];
+
+    let handle = null;
+    let page = 0;
+
+    try {
+
+        while (true) {
+
+            page++;
+
+            const url = handle
+                ? `${baseUrl}/auditlog/v2/auditlogrecords?handle=${encodeURIComponent(handle)}`
+                : `${baseUrl}/auditlog/v2/auditlogrecords` +
+                  `?category=audit.configuration` +
+                  `&time_from=${encodeURIComponent(timeFrom)}` +
+                  `&time_to=${encodeURIComponent(timeTo)}`;
+
+            console.log(
+                `[AUDIT CONFIGURATION] Loading Page ${page}...`
+            );
+
+            const response =
+                await axios.get(
+                    url,
+                    {
+                        headers: {
+                            Authorization:
+                                `Bearer ${cleanToken}`
+                        },
+                        timeout: 120000
+                    }
+                );
+
+            if (Array.isArray(response.data)) {
+
+                rawRecords.push(
+                    ...response.data
+                );
+
+            } else if (
+                response.data?.results &&
+                Array.isArray(
+                    response.data.results
+                )
+            ) {
+
+                rawRecords.push(
+                    ...response.data.results
+                );
+            }
+
+            handle =
+                extractHandle(
+                    response.headers["paging"]
+                );
+
+            if (!handle) {
+                break;
+            }
+        }
+
+
+        /*
+         * ---------------------------------------------------
+         * PROCESS CONFIGURATION AUDIT LOGS
+         * ---------------------------------------------------
+         */
+        const processedRecords = [];
+
+        for (const log of rawRecords) {
+
+            const entries =
+                processUserConfigLog(
+                    log,
+                    userMapping,
+                    subaccountName
+                );
+
+            if (
+                Array.isArray(entries) &&
+                entries.length > 0
+            ) {
+
+                processedRecords.push(
+                    ...entries
+                );
+            }
+        }
+
+        return processedRecords;
+
+    } catch (err) {
+
+        const status =
+            err.response?.status;
+
+        const data =
+            err.response?.data;
+
+        let details;
+
+        if (typeof data === "string") {
+
+            details = data;
+
+        } else if (data?.message) {
+
+            details = data.message;
+
+        } else if (data?.error_description) {
+
+            details =
+                data.error_description;
+
+        } else if (data?.error) {
+
+            details = data.error;
+
+        } else {
+
+            details = err.message;
+        }
+
+        throw new Error(
+            `Failed to fetch configuration audit logs for ${
+                subaccountName || "Unknown"
+            }` +
+            `${status ? ` (HTTP ${status})` : ""}: ${details}`
+        );
+    }
+}
+
+function getSecondPrecisionTimestamp(timestamp) {
+    if (!timestamp) {
+        return "";
+    }
+
+    const date =
+        timestamp instanceof Date
+            ? timestamp
+            : new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(timestamp);
+    }
+
+    return date.toISOString().slice(0, 19);
+}
+function deduplicateUserAuditEntries(entries) {
+
+    const unique = new Map();
+
+    for (const entry of entries) {
+
+        const timestamp =
+            getSecondPrecisionTimestamp(
+                entry.timestamp
+            );
+
+        const key = [
+            entry.system || "",
+            entry.userId || "",
+            entry.userName || "",
+            entry.userType || "",
+            entry.roleCollection || "",
+            entry.eventType || "",
+            entry.event || "",
+            entry.fieldChanged || "",
+            entry.oldValue || "",
+            entry.newValue || "",
+            entry.performedBy || "",
+            entry.userRole || "",
+            entry.status || "",
+            entry.subaccount || "",
+            timestamp
+        ].join("|");
+
+        if (!unique.has(key)) {
+            unique.set(key, entry);
+        }
+    }
+
+    return Array.from(
+        unique.values()
+    );
+}
+module.exports = {
+    fetchUserConfigLogs,
+    fetchUserAuditLogs,
+    deduplicateUserAuditEntries
 
 };
  

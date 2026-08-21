@@ -112,8 +112,8 @@ Content-Type: application/json
     "createdAt": null,
     "createdBy": null,
     "isRunning": false,
-    "lastRunAt": null,
-    "lastSyncAt": "2026-08-01T00:00:00Z",
+    "lastRunAt": "2026-08-21T12:30:00Z",
+    "lastSyncAt": "2026-08-20T00:00:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",
@@ -156,12 +156,20 @@ Content-Type: application/json
     "createdAt": null,
     "createdBy": null,
     "isRunning": false,
-    "lastRunAt": null,
-    "lastSyncAt": "2026-08-17T00:00:00Z",
+    "lastRunAt": "2026-08-21T03:00:00Z",
+    "lastSyncAt": "2026-08-21T00:00:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",
     "modifiedAt": null,
     "modifiedBy": null,
     "reportName": "USER_AUDIT"
+}
+
+### Purge Config data
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/purgeConfigurationData
+Content-Type: application/json
+
+{
+    "fromTimestamp": "2026-08-21T00:00:00Z"
 }

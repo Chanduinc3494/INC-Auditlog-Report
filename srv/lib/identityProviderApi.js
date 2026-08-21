@@ -69,53 +69,77 @@ async function fetchIdentityProviders(baseUrl,token) {
 
 
 async function fetchIdentityUsers(baseUrl, token) {
-
     const userMapping = new Map();
     const failures = [];
 
     try {
+        const count = 100;
+        let startIndex = 1;
+        let totalResults = Infinity;
 
-        const response = await axios.get(
-            `${baseUrl}/Users`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-
-        const users =
-            Array.isArray(response.data?.resources)
-                ? response.data.resources
-                : [];
-
-        for (const user of users) {
-
-            const id =
-                user?.id;
-
-            if (!id) {
-                continue;
-            }
-
-            const userName =
-                user?.name.givenName || user.userName;
-
-            const email =user.emails[0].value;
-
-            userMapping.set(
-                id,
+        while (startIndex <= totalResults) {
+            const response = await axios.get(
+                `${baseUrl}/Users`,
                 {
-                    userName,
-                    email
+                    params: {
+                        startIndex,
+                        count
+                    },
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 }
             );
+
+            const data = response.data;
+
+            const users =
+                Array.isArray(data?.resources)
+                    ? data.resources
+                    : [];
+
+            totalResults =
+                Number(data?.totalResults) || 0;
+
+            for (const user of users) {
+                const id = user?.id;
+
+                if (!id) {
+                    continue;
+                }
+
+                const userName =
+                    user?.userName ||
+                    user?.name?.givenName ||
+                    "";
+
+                const email =
+                    Array.isArray(user?.emails) &&
+                    user.emails.length > 0
+                        ? user.emails.find(
+                            email => email?.primary === true
+                        )?.value ||
+                          user.emails[0]?.value ||
+                          ""
+                        : "";
+
+                userMapping.set(id, {
+                    userName,
+                    email
+                });
+            }
+
+            // Prevent infinite loops if the API returns
+            // an unexpected/empty response.
+            if (users.length === 0) {
+                break;
+            }
+
+            startIndex += users.length;
         }
 
     } catch (err) {
-
-        const data =
-            err.response?.data;
+        const data = err.response?.data;
 
         const errorMessage =
             typeof data === "string"

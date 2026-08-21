@@ -294,5 +294,8 @@ service auditLoggingAndReportingService {
     @requires: 'JobScheduler'
     action   scheduledSyncUserLogs()          returns String;
 
-
+    //Purge data
+     action purgeConfigurationData(
+        fromTimestamp : Timestamp
+    ) returns String;
 }

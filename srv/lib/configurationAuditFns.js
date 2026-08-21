@@ -77,7 +77,7 @@ async function fetchConfigurationAuditLogs(
                 Date.now() - start;
 
 
-          
+
 
             // ----------------------------------------------------
             // Audit Log API returns an array
@@ -117,7 +117,7 @@ async function fetchConfigurationAuditLogs(
         }
 
 
-       
+
 
 
         return allLogs;
@@ -1906,7 +1906,7 @@ function mapGenericSubaccountSettings(
  * Returns an ARRAY because one raw message can contain
  * multiple logical records.
  */
-function mapConfigurationAuditLog(log,identityProviderMap) {
+function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
     if (!log) {
         return [];
     }
@@ -1923,7 +1923,7 @@ function mapConfigurationAuditLog(log,identityProviderMap) {
     if (!message) {
         return [];
     }
-    
+
     const attributes =
         Array.isArray(message.attributes)
             ? message.attributes
@@ -1938,10 +1938,14 @@ function mapConfigurationAuditLog(log,identityProviderMap) {
             message
         );
 
-    const userId =
+    const rawUserId =
         normalizeUserId(
             log.user
         );
+
+    const userId =
+        userMap?.get(rawUserId) ||
+        rawUserId;
 
     const timestamp =
         message.time ||
@@ -2636,7 +2640,7 @@ function getApplicationNameFromUrl(
          */
         return applicationPart
             .replace(/-srv$/i, "");
-            
+
     } catch {
         return null;
     }
