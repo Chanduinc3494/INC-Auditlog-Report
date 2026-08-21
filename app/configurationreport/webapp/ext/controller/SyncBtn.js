@@ -1,8 +1,8 @@
 sap.ui.define([
     "sap/m/MessageToast",
-     "sap/m/MessageBox",
-      "sap/m/BusyDialog"
-], function(MessageToast,MessageBox,BusyDialog) {
+    "sap/m/MessageBox",
+    "sap/m/BusyDialog"
+], function (MessageToast, MessageBox, BusyDialog) {
     'use strict';
 
     return {
@@ -12,8 +12,8 @@ sap.ui.define([
          * @param oContext the context of the page on which the event was fired. `undefined` for list report page.
          * @param aSelectedContexts the selected contexts of the table rows.
          */
-        SyncBtnFunction: async function(oContext, aSelectedContexts) {
-             const oBusyDialog = new BusyDialog({
+        SyncBtnFunction: async function (oContext, aSelectedContexts) {
+            const oBusyDialog = new BusyDialog({
                 title: "Loading",
                 text: "Fetching data..."
             });
@@ -56,7 +56,7 @@ sap.ui.define([
                 // 4. Execute CAP action
                 // --------------------------------------------------
 
-                await oOperation.execute();
+                await oOperation.execute("$direct");
 
                 // --------------------------------------------------
                 // 5. Read action response
@@ -64,8 +64,8 @@ sap.ui.define([
 
                 const oResult =
                     oOperation.getBoundContext().getObject();
-                
-                  if (
+
+                if (
                     oResult?.failures &&
                     oResult.failures.length > 0
                 ) {
@@ -86,33 +86,49 @@ sap.ui.define([
 
                     });
                 }
-                if (oResult?.status === "PARTIAL_SUCCESS") {
+                if (oResult?.status === "RUNNING") {
+
+                    MessageBox.information(
+                        oResult.message,
+                        {
+                            title: "Synchronization In Progress"
+                        }
+                    );
+
+                } else if (oResult?.status === "PARTIAL_SUCCESS") {
 
                     MessageBox.warning(
-                        oResult?.message ||
-                        "Synchronization completed with some failures.",
+                        oResult.message,
                         {
                             title: "Synchronization Completed with Warnings"
                         }
                     );
 
-                } else {
+                    oModel.refresh("$auto");
+
+                } else if (oResult?.status === "SUCCESS") {
 
                     MessageToast.show(
-                        oResult?.message ||
+                        oResult.message ||
                         "Configuration synchronization completed successfully."
                     );
+
+                    oModel.refresh("$auto");
+
+                } else if (oResult?.status === "FAILED") {
+
+                    MessageBox.error(
+                        oResult.message ||
+                        "Configuration synchronization failed."
+                    );
+
+                } else {
+
+                    MessageBox.warning(
+                        oResult.message ||
+                        "Unexpected synchronization status received."
+                    );
                 }
-                // MessageToast.show(
-                //     oResult?.value ||
-                //     "Configuration synchronization completed successfully."
-                // );
-
-                // --------------------------------------------------
-                // 6. Refresh List Report
-                // --------------------------------------------------
-
-                oModel.refresh("$auto");
 
             } catch (err) {
 
@@ -125,7 +141,7 @@ sap.ui.define([
                     err.message ||
                     "Configuration synchronization failed."
                 );
-            }finally {
+            } finally {
 
                 // Always close BusyDialog
                 oBusyDialog.close();

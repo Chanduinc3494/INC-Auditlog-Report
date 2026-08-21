@@ -157,11 +157,6 @@ annotate service.ServiceAuditReports with @(
             Value : changedOn,
             ![@HTML5.CssDefaults] : { width : '13%' }
         },
-        {
-            $Type : 'UI.DataField',
-            Value : changedBy,
-            ![@HTML5.CssDefaults] : { width : '13%' }
-        },
     ],
     UI.SelectionPresentationVariant #tableView : {
         $Type : 'UI.SelectionPresentationVariantType',

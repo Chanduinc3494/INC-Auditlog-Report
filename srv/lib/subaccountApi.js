@@ -29,22 +29,24 @@ async function fetchSubaccount(baseUrl, token, subaccountIds) {
 
         } catch (err) {
 
-            const errorMessage =
-                err.response?.data?.message ||
-                err.response?.data?.error_description ||
-                err.response?.data ||
-                err.message;
+           const data = err.response?.data;
 
-            console.error(
-                `Accounts API failed for subaccount ${subaccountId}:`,
-                errorMessage
-            );
+            const errorMessage =
+                typeof data === "string"
+                    ? data
+                    : data?.message ||
+                      data?.error_description ||
+                      data?.error ||
+                      err.message;
+
+           
 
             // Store failure
             failures.push({
                 api: "ACCOUNTS",
-                operation:"API_CAL",
+                operation:"GET_SUBACCOUNT",
                 subaccountId: subaccountId,
+                error: errorMessage,
             });
 
 
@@ -58,7 +60,7 @@ async function fetchSubaccount(baseUrl, token, subaccountIds) {
             );
         }
     }
-    console.log(failures);
+    
     return {subaccountMap,failures};
 }
 

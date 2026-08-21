@@ -86,14 +86,14 @@
 sap.ui.define([
     "sap/m/MessageToast",
     "sap/m/MessageBox",
-  "sap/m/BusyDialog"
-], function (MessageToast, MessageBox,BusyDialog) {
+    "sap/m/BusyDialog"
+], function (MessageToast, MessageBox, BusyDialog) {
     "use strict";
 
     return {
 
         SyncRoleLogs: async function (oContext, aSelectedContexts) {
-             const oBusyDialog = new BusyDialog({
+            const oBusyDialog = new BusyDialog({
                 title: "Loading",
                 text: "Fetching data..."
             });
@@ -137,7 +137,7 @@ sap.ui.define([
                 // 4. Execute CAP action
                 // --------------------------------------------------
 
-                await oOperation.execute();
+                await oOperation.execute("$direct");
 
                 // --------------------------------------------------
                 // 5. Read action response
@@ -167,33 +167,51 @@ sap.ui.define([
 
                     });
                 }
-               if (
-                    oResult?.status === "PARTIAL_SUCCESS"
-                ) {
+                if (oResult?.status === "RUNNING") {
+
+                    MessageBox.information(
+                        oResult.message ||
+                        "Role synchronization is already running.",
+                        {
+                            title: "Synchronization In Progress"
+                        }
+                    );
+
+                } else if (oResult?.status === "PARTIAL_SUCCESS") {
 
                     MessageBox.warning(
-                        oResult?.message ||
+                        oResult.message ||
                         "Role synchronization completed with some failures.",
                         {
-                            title:
-                                "Role Synchronization Completed with Warnings"
+                            title: "Role Synchronization Completed with Warnings"
                         }
+                    );
+
+                    oModel.refresh("$auto");
+
+                } else if (oResult?.status === "SUCCESS") {
+
+                    MessageToast.show(
+                        oResult.message ||
+                        "Role synchronization completed successfully."
+                    );
+
+                    oModel.refresh("$auto");
+
+                } else if (oResult?.status === "FAILED") {
+
+                    MessageBox.error(
+                        oResult.message ||
+                        "Role synchronization failed."
                     );
 
                 } else {
 
-                    MessageToast.show(
-                        oResult?.message ||
-                        "Role synchronization completed successfully."
+                    MessageBox.warning(
+                        oResult.message ||
+                        "Unexpected synchronization status received."
                     );
                 }
-
-
-                // --------------------------------------------------
-                // 6. Refresh List Report
-                // --------------------------------------------------
-
-                oModel.refresh("$auto");
 
             } catch (err) {
 
@@ -206,7 +224,7 @@ sap.ui.define([
                     err.message ||
                     "Role synchronization failed."
                 );
-            }finally {
+            } finally {
 
                 // Always close BusyDialog
                 oBusyDialog.close();

@@ -35,13 +35,10 @@ async function fetchServiceInstances(baseUrl, token) {
 
 
 async function fetchServicePlans(baseUrl, token, environment) {
-
     const allPlans = [];
     let nextToken = null;
     try {
-
         do {
-
             const response = await axios.get(
                 `${baseUrl}/v1/service_plans`,
                 {
@@ -55,16 +52,11 @@ async function fetchServicePlans(baseUrl, token, environment) {
                     }
                 }
             );
-
             allPlans.push(...response.data.items);
-
             nextToken = response.data.token;
-
         } while (nextToken);
-
         return allPlans;
     } catch (err) {
-
         throw new Error(
             `Failed to fetch ${environment} service plans: ` +
             `${err.response?.data?.message ||
@@ -76,12 +68,10 @@ async function fetchServicePlans(baseUrl, token, environment) {
 
 
 async function fetchServiceOfferings(baseUrl, token, environment) {
-
     const allOfferings = [];
     let nextToken = null;
     try {
         do {
-
             const response = await axios.get(
                 `${baseUrl}/v1/service_offerings`,
                 {
@@ -95,16 +85,11 @@ async function fetchServiceOfferings(baseUrl, token, environment) {
                     }
                 }
             );
-
             allOfferings.push(...response.data.items);
-
             nextToken = response.data.token;
-
         } while (nextToken);
-
         return allOfferings;
     } catch (err) {
-
         throw new Error(
             `Failed to fetch ${environment} service Offerings: ` +
             `${err.response?.data?.message ||

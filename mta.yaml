@@ -180,6 +180,9 @@ resources:
               - Authentication: NoAuthentication
                 HTML5.DynamicDestination: true
                 HTML5.ForwardAuthToken: true
+                HTML5.Timeout: 300000
+                HTML5.SocketReadTimeoutInSeconds: 300
+                WebIDEEnabled: true
                 Name: srv-api
                 ProxyType: Internet
                 Type: HTTP

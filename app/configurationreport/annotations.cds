@@ -6,7 +6,20 @@ annotate service.ConfigurationReport with {
     userId          @(Common.Label : 'User ID');
     userRole        @(Common.Label : 'User Role');
     eventType       @(Common.Label : 'Event Type');
-    btpService      @(Common.Label : 'BTP Service');
+    btpService      @(Common.Label : 'BTP Service',
+        Common.ValueList : {
+            $Type : 'Common.ValueListType',
+            CollectionPath : 'ConfigBTPServiceVH',
+            Parameters : [
+                {
+                    $Type : 'Common.ValueListParameterInOut',
+                    LocalDataProperty : btpService,
+                    ValueListProperty : 'btpService',
+                },
+            ],
+            Label : 'BTP Service',
+        },
+        Common.ValueListWithFixedValues : true,);
     subAccount      @(Common.Label : 'Subaccount');
     region          @(Common.Label : 'Region');
     actionPerformed @(Common.Label : 'Action Performed');
@@ -98,11 +111,10 @@ annotate service.ConfigurationReport with @(
     // Add filter fields to the selection
     UI.SelectionFields : [
         system,
-        subAccount,
-        userRole,
+        btpService,
         eventType,
         userId,
-        timestamp
+        timestamp,
     ],
     Capabilities.FilterRestrictions : {
         FilterExpressionRestrictions : [
@@ -124,13 +136,6 @@ annotate service.ConfigurationReport with @(
             $Type : 'UI.DataField',
             Value : userId,
             ![@HTML5.CssDefaults] : { width : '13%' }
-        },
-        {
-            $Type : 'UI.DataField',
-            Value : userRole,
-            Criticality : roleCriticality,
-            CriticalityRepresentation : #WithoutIcon,
-            ![@HTML5.CssDefaults] : { width : '11%' }
         },
         {
             $Type : 'UI.DataField',

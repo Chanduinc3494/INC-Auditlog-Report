@@ -5,13 +5,36 @@ service auditLoggingAndReportingService {
 
     entity RoleAuditReports       as
         projection on db.RoleAuditReport {
-            *,
+            ID,
+            system,
+            roleCollection,
+            event,
+            timestamp,
+            changedByUserId,
+            fieldChanged,
+            oldValue,
+            newValue,
+            status,
+            subaccountName,
             virtual statusCriticality : Integer
         };
 
+    // entity ConfigurationReport    as
+    //     projection on db.ConfigurationReport  {
+    //         *,
+    //         virtual roleCriticality : Integer
+    //     };
     entity ConfigurationReport    as
         projection on db.ConfigurationReport {
-            *,
+            ID,
+            system,
+            userId,
+            eventType,
+            btpService,
+            subAccount,
+            region,
+            actionPerformed,
+            timestamp,
             virtual roleCriticality : Integer
         };
 
@@ -25,6 +48,7 @@ service auditLoggingAndReportingService {
         projection on db.ServiceAuditReport
         excluding {
             serviceInstanceId,
+            changedBy,
             subaccountId
         };
 
@@ -128,13 +152,6 @@ service auditLoggingAndReportingService {
         group by
             status;
 
-    @readonly
-    entity RoleUserRoleVH         as
-        select from db.RoleAuditReport {
-            key userRole
-        }
-        group by
-            userRole;
 
     @readonly
     entity RoleSubaccountNameVH   as
@@ -161,12 +178,12 @@ service auditLoggingAndReportingService {
             system;
 
     @readonly
-    entity ConfigSubaccountVH     as
+    entity ConfigBTPServiceVH     as
         select from db.ConfigurationReport {
-            key subAccount
+            key btpService
         }
         group by
-            subAccount;
+            btpService;
 
     @readonly
     entity ConfigRoleCollectionVH as
@@ -240,13 +257,13 @@ service auditLoggingAndReportingService {
         group by
             createdBy;
 
-    @readonly
-    entity ServiceChangedByVH     as
-        select from db.ServiceAuditReport {
-            key changedBy
-        }
-        group by
-            changedBy;
+    // @readonly
+    // entity ServiceChangedByVH     as
+    //     select from db.ServiceAuditReport {
+    //         key changedBy
+    //     }
+    //     group by
+    //         changedBy;
 
 
     @readonly
@@ -277,5 +294,8 @@ service auditLoggingAndReportingService {
     @requires: 'JobScheduler'
     action   scheduledSyncUserLogs()          returns String;
 
-
+    //Purge data
+     action purgeConfigurationData(
+        fromTimestamp : Timestamp
+    ) returns String;
 }
