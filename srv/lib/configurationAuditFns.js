@@ -1559,13 +1559,18 @@ function mapIdentityProvider(
     eventType,
     identityProviderMap
 ) {
+    
     const changedAttributes =
         getChangedAttributes(
             attributes
         );
+    const objectType =
+        normalizeString(
+            context?.type
+        ).toLowerCase();
 
     if (
-        changedAttributes.length === 0
+        changedAttributes.length === 0 && objectType !== "xsidentityproviderid2status"
     ) {
         return null;
     }
@@ -1629,7 +1634,7 @@ function mapIdentityProvider(
 
     const identityProviderId =
         normalizeString(
-            context?.identityproviderid
+            context?.id?.identityproviderid
         );
 
     const mappedTrustName =
@@ -1642,7 +1647,7 @@ function mapIdentityProvider(
      * use the ID as fallback.
      */
     const trustName =
-        mappedTrustName ||
+        mappedTrustName?.name ||
         identityProviderId ||
         "Unknown";
 
@@ -1677,6 +1682,104 @@ function mapIdentityProvider(
         if (name === "status") {
             status = newValue;
         }
+    }
+
+    // Trust related changes 
+    if (
+        objectType ===
+        "xsidentityproviderid2status"
+    ) {
+        let operation = "";
+        let status = "";
+
+        for (const attr of attributes) {
+
+            const name =
+                normalizeString(
+                    attr?.name
+                ).toLowerCase();
+
+            const newValue =
+                normalizeString(
+                    attr?.new
+                ).toLowerCase();
+
+            if (name === "operation") {
+                operation = newValue;
+            }
+
+            if (name === "status") {
+                status = newValue;
+            }
+        }
+
+        /*
+         * Get actual changed fields.
+         * operation/status are metadata and should
+         * not be considered as the configuration change.
+         */
+        const changedFields =
+            getChangedAttributes(attributes)
+                .map(attr =>
+                    normalizeString(
+                        attr?.name
+                    )
+                )
+                .filter(
+                    field =>
+                        field &&
+                        field.toLowerCase() !== "operation" &&
+                        field.toLowerCase() !== "status"
+                );
+
+        /*
+         * Failed operation
+         */
+        if (status === "failed") {
+            return {
+                btpService: "Trust",
+                eventType:
+                    operation === "delete"
+                        ? "DELETE"
+                        : eventType,
+                actionPerformed:
+                    `Trust "${trustName}" ` +
+                    `${operation || "operation"} failed`
+            };
+        }
+
+        /*
+         * Delete / Create
+         */
+        if (operation === "delete") {
+            return {
+                btpService: "Trust",
+                eventType: "DELETE",
+                actionPerformed:
+                    `Trust "${trustName}" deleted`
+            };
+        }
+
+        if (operation === "create") {
+            return {
+                btpService: "Trust",
+                eventType: "CREATE",
+                actionPerformed:
+                    `Trust "${trustName}" created`
+            };
+        }
+
+        /*
+         * Update
+         */
+        return {
+            btpService: "Trust",
+            eventType: "UPDATE",
+            actionPerformed:
+                changedFields.length > 0
+                    ? `Trust "${trustName}" updated: ${changedFields.join(", ")}`
+                    : `Trust "${trustName}" updated`
+        };
     }
 
 
@@ -1947,11 +2050,11 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
         );
 
     const effectiveUserId = onBehalfOf || rawUserId;
-    
+
 
     const userId =
         userMap?.get(effectiveUserId) ||
-        effectiveUserId;
+        rawUserId;
 
     const timestamp =
         message.time ||
@@ -2079,8 +2182,7 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
                 attributes,
                 eventType
             );
-        console.log("context:",context);
-        console.log("onBehalf:",onBehalfOf);
+
         if (application) {
             results.push({
                 system: "BTP",
@@ -2233,7 +2335,42 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
         return results;
     }
 
+    /*
+ * ----------------------------------------------
+ * Identity Provider Status (Trust)
+ * ----------------------------------------------
+ */
+    if (
+        objectTypeLower ===
+        "xsidentityproviderid2status"
+    ) {
+        const identityProvider =
+            mapIdentityProvider(
+                attributes,
+                context,
+                eventType,
+                identityProviderMap
+            );
 
+        if (identityProvider) {
+            results.push({
+                system: "BTP",
+                userId,
+                userRole: "",
+                eventType:
+                    identityProvider.eventType,
+                btpService:
+                    "Trust",
+                subAccount: null,
+                region: null,
+                actionPerformed:
+                    identityProvider.actionPerformed,
+                timestamp
+            });
+        }
+
+        return results;
+    }
     /*
      * ----------------------------------------------
      * Identity Provider
