@@ -46,15 +46,6 @@ function processUserConfigLog(
      * -------------------------------------------------------
      * USER CREATION
      * -------------------------------------------------------
-     *
-     * For CREATE, the audit event does not contain
-     * the newly created user's details.
-     *
-     * Therefore:
-     * userId   = ""
-     * userName = ""
-     *
-     * Only the performer is populated.
      */
     if (
         obj.tableName === "users" &&
@@ -119,7 +110,7 @@ function processUserConfigLog(
 
             userId: createdUserEmail,
 
-            userName:createdUserName,
+            userName: createdUserName,
 
             userType:
                 "",
@@ -168,7 +159,7 @@ function processUserConfigLog(
         obj.crudType === "DELETE"
     ) {
 
-        
+
 
         let deletedUser = {};
 
@@ -195,10 +186,7 @@ function processUserConfigLog(
                     error
                 );
 
-                /*
-                 * Do not stop the complete audit synchronization
-                 * because one user record could not be parsed.
-                 */
+
                 deletedUser = {};
             }
         }
@@ -280,6 +268,191 @@ function processUserConfigLog(
             subaccount:
                 subaccountName
         });
+
+        return entries;
+    }
+    /*
+ * -------------------------------------------------------
+ * USER UPDATE
+ * -------------------------------------------------------
+ */
+    if (
+        obj.tableName === "users" &&
+        obj.crudType === "UPDATE"
+    ) {
+        console.log("user update logs",log);
+        let oldUser = {};
+        let newUser = {};
+        if (completeAttribute?.old) {
+            try {
+                oldUser =
+                    typeof completeAttribute.old === "string"
+                        ? JSON.parse(completeAttribute.old)
+                        : completeAttribute.old;
+            } catch (error) {
+                console.error(
+                    "Failed to parse old user data:",
+                    error
+                );
+            }
+        }
+
+        if (completeAttribute?.new) {
+            try {
+                newUser =
+                    typeof completeAttribute.new === "string"
+                        ? JSON.parse(completeAttribute.new)
+                        : completeAttribute.new;
+            } catch (error) {
+                console.error(
+                    "Failed to parse new user data:",
+                    error
+                );
+            }
+        }
+
+        /*
+         * Extract target user information
+         */
+        const userId =
+            newUser?.id ||
+            oldUser?.id ||
+            "";
+
+        const userName =
+            newUser?.userName ||
+            oldUser?.userName ||
+            newUser?.name?.formatted ||
+            oldUser?.name?.formatted ||
+            "";
+
+        const userEmail =
+            Array.isArray(newUser?.emails) &&
+                newUser.emails.length > 0
+                ? newUser.emails.find(
+                    email => email?.primary === true
+                )?.value ||
+                newUser.emails[0]?.value ||
+                ""
+                : Array.isArray(oldUser?.emails) &&
+                    oldUser.emails.length > 0
+                    ? oldUser.emails.find(
+                        email => email?.primary === true
+                    )?.value ||
+                    oldUser.emails[0]?.value ||
+                    ""
+                    : "";
+        const fieldsToCheck = [
+            {
+                field: "User Name",
+                key: "userName"
+            },
+            {
+                field: "External ID",
+                key: "externalId"
+            },
+            {
+                field: "Active",
+                key: "active"
+            },
+            {
+                field: "Verified",
+                key: "verified"
+            },
+            {
+                field: "Password Last Modified",
+                key: "passwordLastModified"
+            },
+            {
+                field: "Previous Logon Time",
+                key: "previousLogonTime"
+            },
+            {
+                field: "Last Logon Time",
+                key: "lastLogonTime"
+            }
+        ];
+
+        /*
+         * Compare old vs new
+         */
+        for (const fieldConfig of fieldsToCheck) {
+
+            const oldValue =
+                oldUser?.[fieldConfig.key];
+
+            const newValue =
+                newUser?.[fieldConfig.key];
+
+            /*
+             * Only create an audit record when
+             * the value actually changed.
+             */
+            if (
+                JSON.stringify(oldValue) !==
+                JSON.stringify(newValue)
+            ) {
+
+                entries.push({
+                    system: "BTP",
+                    timestamp: message.time,
+                    eventType: "User Management",
+                    event: "User Updated",
+                    userId: userEmail || userId,
+                    userName: userName,
+                    userType: "",
+                    roleCollection: "",
+                    fieldChanged: fieldConfig.field,
+                    oldValue: oldValue ?? "-",
+                    newValue: newValue ?? "-",
+                    performedBy: performedBy,
+                    userRole: "",
+                    status: status,
+                    subaccount: subaccountName
+                });
+            }
+        }
+
+
+        const oldEmail =
+            Array.isArray(oldUser?.emails) &&
+                oldUser.emails.length > 0
+                ? oldUser.emails.find(
+                    email => email?.primary === true
+                )?.value ||
+                oldUser.emails[0]?.value ||
+                ""
+                : "";
+
+        const newEmail =
+            Array.isArray(newUser?.emails) &&
+                newUser.emails.length > 0
+                ? newUser.emails.find(
+                    email => email?.primary === true
+                )?.value ||
+                newUser.emails[0]?.value ||
+                ""
+                : "";
+
+        if (oldEmail !== newEmail) {
+            entries.push({
+                system: "BTP",
+                timestamp: message.time,
+                eventType: "User Management",
+                event: "User Updated",
+                userId: newEmail || userId,
+                userName: userName,
+                userType: "",
+                roleCollection: "",
+                fieldChanged: "Email",
+                oldValue: oldEmail || "-",
+                newValue: newEmail || "-",
+                performedBy: performedBy,
+                userRole: "",
+                status: status,
+                subaccount: subaccountName
+            });
+        }
 
         return entries;
     }

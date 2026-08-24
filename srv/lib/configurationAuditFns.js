@@ -71,6 +71,14 @@ async function fetchConfigurationAuditLogs(
                     timeout: 30000
                 }
             );
+            // No record
+            if (response.status === 204) {
+                console.log(
+                    `[AUDIT LOG] No configuration audit logs found. Page ${page}.`
+                );
+
+                return allLogs;
+            }
 
 
             const duration =
@@ -250,13 +258,6 @@ function normalizeUserId(user) {
     if (!value) {
         return "";
     }
-
-    // user/sap.default/aniketkumar.singh@incture.com
-    //                     ↓
-    // aniketkumar.singh@incture.com
-    //
-    // If you want the complete technical user value instead,
-    // remove this normalization.
     if (value.startsWith("user/")) {
         const parts = value.split("/");
 
@@ -1929,8 +1930,10 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
             ? message.attributes
             : [];
 
-    const context =
-        getObjectContext(message);
+    const context = getObjectContext(message);
+
+    const onBehalfOf = context?.id?.onBehalfOf || "";
+
 
     const eventType =
         getEventType(
@@ -1943,9 +1946,12 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
             log.user
         );
 
+    const effectiveUserId = onBehalfOf || rawUserId;
+    
+
     const userId =
-        userMap?.get(rawUserId) ||
-        rawUserId;
+        userMap?.get(effectiveUserId) ||
+        effectiveUserId;
 
     const timestamp =
         message.time ||
@@ -2073,7 +2079,8 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
                 attributes,
                 eventType
             );
-
+        console.log("context:",context);
+        console.log("onBehalf:",onBehalfOf);
         if (application) {
             results.push({
                 system: "BTP",

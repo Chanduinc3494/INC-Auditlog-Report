@@ -1166,6 +1166,20 @@ function getSecondPrecisionTimestamp(timestamp) {
 
     return date.toISOString().slice(0, 19);
 }
+function normalizeUserId(user) {
+    const value = normalizeString(user);
+
+    if (!value) {
+        return "";
+    }
+    if (value.startsWith("user/")) {
+        const parts = value.split("/");
+
+        return parts[parts.length - 1];
+    }
+
+    return value;
+}
 function deduplicateUserAuditEntries(entries) {
 
     const unique = new Map();

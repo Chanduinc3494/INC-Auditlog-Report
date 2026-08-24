@@ -1951,7 +1951,7 @@ module.exports = cds.service.impl(async function () {
         const timestamp = new Date(fromTimestamp);
 
         await DELETE
-            .from(UserAuditReport)
+            .from(ConfigurationReport)
             .where({
                 timestamp: { ">=": timestamp }
             });
