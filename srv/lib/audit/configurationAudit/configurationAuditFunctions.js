@@ -87,10 +87,7 @@ async function fetchConfigurationAuditLogs(
 
 
 
-            // ----------------------------------------------------
             // Audit Log API returns an array
-            // ----------------------------------------------------
-
             if (
                 !Array.isArray(
                     response.data
@@ -109,10 +106,7 @@ async function fetchConfigurationAuditLogs(
             );
 
 
-            // ----------------------------------------------------
             // Get pagination handle
-            // ----------------------------------------------------
-
             handle =
                 extractHandle(
                     response.headers?.paging
@@ -123,10 +117,6 @@ async function fetchConfigurationAuditLogs(
                 break;
             }
         }
-
-
-
-
 
         return allLogs;
 
@@ -477,29 +467,6 @@ function formatDuration(seconds) {
 }
 
 
-function formatValue(value) {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return "Not configured";
-    }
-
-    if (typeof value === "boolean") {
-        return value
-            ? "Enabled"
-            : "Disabled";
-    }
-
-    if (typeof value === "object") {
-        return JSON.stringify(value);
-    }
-
-    return String(value);
-}
-
-
 function getAddUpdateRemove(oldValue, newValue) {
     const oldEmpty =
         oldValue === null ||
@@ -836,25 +803,6 @@ function findNestedValue(
  * SERVICE SUBSCRIPTION
  * ---------------------------------------------------------
  */
-function getServiceAppName(attributes) {
-    for (const attr of attributes) {
-        const newValue =
-            parseJsonValue(attr?.new);
-
-        if (
-            newValue &&
-            typeof newValue === "object" &&
-            newValue.appName
-        ) {
-            return normalizeString(
-                newValue.appName
-            );
-        }
-    }
-
-    return "";
-}
-
 function getServiceDetails(attributes) {
     for (const attr of attributes) {
         const newValue =
@@ -986,30 +934,6 @@ function mapRoleAssignment(
  * DESTINATION
  * ---------------------------------------------------------
  */
-function getDestinationName(attributes) {
-    for (const attr of attributes) {
-        const newValue =
-            parseJsonValue(attr?.new);
-
-        if (!newValue) {
-            continue;
-        }
-
-        if (newValue.Name) {
-            return normalizeString(
-                newValue.Name
-            );
-        }
-
-        if (newValue.name) {
-            return normalizeString(
-                newValue.name
-            );
-        }
-    }
-
-    return "";
-}
 
 function getDestinationInfo(attributes) {
     const names = [];
@@ -2526,61 +2450,6 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap,instanceMap)
 
     return results;
 }
-function consolidateConfigurationEntries(entries) {
-    const result = [];
-
-    const tokenEntries = [];
-    const otherEntries = [];
-
-    for (const entry of entries) {
-        if (
-            entry.btpService ===
-            "Subaccount Settings" &&
-            entry.actionPerformed?.startsWith(
-                "Access Token Validity:"
-            )
-        ) {
-            tokenEntries.push(entry);
-        } else {
-            otherEntries.push(entry);
-        }
-    }
-
-    /*
-     * If token validity generated multiple audit messages
-     * for the same timestamp/user/subaccount, keep only
-     * one logical reporting row.
-     */
-    const tokenGroups =
-        new Map();
-
-    for (const entry of tokenEntries) {
-        const timestamp =
-            entry.timestamp instanceof Date
-                ? entry.timestamp.getTime()
-                : String(entry.timestamp);
-
-        const key = [
-            entry.userId,
-            entry.subAccount,
-            timestamp
-        ].join("|");
-
-        if (!tokenGroups.has(key)) {
-            tokenGroups.set(
-                key,
-                entry
-            );
-        }
-    }
-
-    result.push(
-        ...otherEntries,
-        ...tokenGroups.values()
-    );
-
-    return result;
-}
 
 /**
  * -------------------------------------------------------
@@ -2864,13 +2733,8 @@ function extractNormalizedCloneId(rawUserId) {
 
 module.exports = {
     mapConfigurationAuditLog,
-    parseMessage,
-    parseJsonValue,
-    getChangedAttributes,
-    formatDuration,
     fetchConfigurationAuditLogs,
     deduplicateConfigurationEntries,
-    consolidateConfigurationEntries,
     filterConfigurationEntries,
     buildInstanceMap
 };

@@ -342,7 +342,6 @@ async function fetchAllUsers(
 
 
 module.exports = {
-    fetchUsersPage,
     fetchUsers,
     fetchAllUsers
 };

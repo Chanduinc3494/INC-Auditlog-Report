@@ -1,7 +1,7 @@
 
  
 const axios = require("axios");
-const {processUserConfigLog} = require("./ProcessUserConfigLogs");
+const {processUserConfigLog} = require("./audit/configurationAudit/ProcessUserConfigLogs");
 /* ========================================================================= */
 
 /*  HELPER FUNCTIONS                                                         */
