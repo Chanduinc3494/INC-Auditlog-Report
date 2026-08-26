@@ -1559,7 +1559,7 @@ function mapIdentityProvider(
     eventType,
     identityProviderMap
 ) {
-    
+
     const changedAttributes =
         getChangedAttributes(
             attributes
@@ -2010,7 +2010,7 @@ function mapGenericSubaccountSettings(
  * Returns an ARRAY because one raw message can contain
  * multiple logical records.
  */
-function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
+function mapConfigurationAuditLog(log, identityProviderMap, userMap,instanceMap) {
     if (!log) {
         return [];
     }
@@ -2051,8 +2051,9 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
 
     const effectiveUserId = onBehalfOf || rawUserId;
 
+    const cloneInstanceId = extractNormalizedCloneId(log.user);
 
-    const userId =
+    const userId = (cloneInstanceId && instanceMap?.get(cloneInstanceId)) ||
         userMap?.get(effectiveUserId) ||
         rawUserId;
 
@@ -2816,6 +2817,51 @@ function filterConfigurationEntries(entries) {
     });
 }
 
+/**
+ * -----------------------------
+ * Instance Map
+ * --------
+ */
+function buildInstanceMap(serviceInstancesResponse) {
+    const map = new Map();
+
+    const items = serviceInstancesResponse?.items || [];
+
+    for (const item of items) {
+        if (item?.id && item?.name) {
+            map.set(item.id.toLowerCase(), item.name);
+        }
+    }
+
+    return map;
+}
+/**
+ * ------------------------------------------
+ * extract normalized uuid from sb-clone for instance name
+ * -----------------------------------
+ */
+function extractNormalizedCloneId(rawUserId) {
+    if (!rawUserId || typeof rawUserId !== "string") {
+        return null;
+    }
+
+    const match = rawUserId.match(/^sb-clone([a-f0-9]{32})!/i);
+
+    if (!match) {
+        return null;
+    }
+
+    const hex = match[1];
+
+    return [
+        hex.slice(0, 8),
+        hex.slice(8, 12),
+        hex.slice(12, 16),
+        hex.slice(16, 20),
+        hex.slice(20, 32)
+    ].join("-").toLowerCase();
+}
+
 module.exports = {
     mapConfigurationAuditLog,
     parseMessage,
@@ -2825,5 +2871,6 @@ module.exports = {
     fetchConfigurationAuditLogs,
     deduplicateConfigurationEntries,
     consolidateConfigurationEntries,
-    filterConfigurationEntries
+    filterConfigurationEntries,
+    buildInstanceMap
 };

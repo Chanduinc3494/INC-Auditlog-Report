@@ -9,14 +9,15 @@ const { SELECT,
 const { fetchRoleLogs } = require("./lib/roleAuditFunction");
 const { formatAuditTimestamp } = require("./lib/utils");
 const { fetchUsers, fetchAllUsers } = require("./lib/cfUserApi");
-const { fetchUserAuditLogs, fetchUserConfigLogs,deduplicateUserAuditEntries } = require("./lib/userAuditfns")
-const { fetchConfigurationAuditLogs, mapConfigurationAuditLog, deduplicateConfigurationEntries, filterConfigurationEntries } = require("./lib/configurationAuditFns");
+const { fetchUserAuditLogs, fetchUserConfigLogs, deduplicateUserAuditEntries } = require("./lib/userAuditfns")
+const { fetchConfigurationAuditLogs, mapConfigurationAuditLog, deduplicateConfigurationEntries, filterConfigurationEntries,buildInstanceMap} = require("./lib/configurationAuditFns");
 const cfAuth = require("./lib/cfAuth");
 const { indexof } = require("@cap-js/hana/lib/cql-functions");
 const { fetchSubaccount } = require("./lib/subaccountApi");
 const { getErrorMessage } = require("./lib/errorMessage");
 const { fetchIdentityProviders, fetchIdentityUsers } = require("./lib/identityProviderApi"); // xsuaa apis
-const { processUserConfigLog } = require("./lib/ProcessUserConfigLogs")
+const { processUserConfigLog } = require("./lib/ProcessUserConfigLogs");
+const { fetchInstanceMapForSubaccount } = require("./utils/instancesHelper");
 
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
@@ -1184,6 +1185,16 @@ module.exports = cds.service.impl(async function () {
                     });
                 }
 
+                const instanceMap =
+                    await fetchInstanceMapForSubaccount(
+                        BTPConnection,
+                        connection.subaccountId,
+                        failedConnections,
+                        fetchServiceInstances,
+                        buildInstanceMap,
+                        oAuthManager
+                    );
+
                 //===========Configuration Logs=====================
                 try {
 
@@ -1224,7 +1235,8 @@ module.exports = cds.service.impl(async function () {
                                 mapConfigurationAuditLog(
                                     log,
                                     identityProviderMap,
-                                    userMap
+                                    userMap,
+                                    instanceMap
                                 );
 
 

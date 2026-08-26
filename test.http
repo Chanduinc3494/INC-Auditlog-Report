@@ -189,5 +189,5 @@ POST http://localhost:4004/odata/v4/audit-logging-and-reporting/purgeConfigurati
 Content-Type: application/json
 
 {
-    "fromTimestamp": "2026-08-24T08:00:00Z"
+    "fromTimestamp": "2026-08-25T09:10:00Z"
 }
