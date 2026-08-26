@@ -71,6 +71,14 @@ async function fetchConfigurationAuditLogs(
                     timeout: 30000
                 }
             );
+            // No record
+            if (response.status === 204) {
+                console.log(
+                    `[AUDIT LOG] No configuration audit logs found. Page ${page}.`
+                );
+
+                return allLogs;
+            }
 
 
             const duration =
@@ -79,10 +87,7 @@ async function fetchConfigurationAuditLogs(
 
 
 
-            // ----------------------------------------------------
             // Audit Log API returns an array
-            // ----------------------------------------------------
-
             if (
                 !Array.isArray(
                     response.data
@@ -101,10 +106,7 @@ async function fetchConfigurationAuditLogs(
             );
 
 
-            // ----------------------------------------------------
             // Get pagination handle
-            // ----------------------------------------------------
-
             handle =
                 extractHandle(
                     response.headers?.paging
@@ -115,10 +117,6 @@ async function fetchConfigurationAuditLogs(
                 break;
             }
         }
-
-
-
-
 
         return allLogs;
 
@@ -250,13 +248,6 @@ function normalizeUserId(user) {
     if (!value) {
         return "";
     }
-
-    // user/sap.default/aniketkumar.singh@incture.com
-    //                     ↓
-    // aniketkumar.singh@incture.com
-    //
-    // If you want the complete technical user value instead,
-    // remove this normalization.
     if (value.startsWith("user/")) {
         const parts = value.split("/");
 
@@ -473,29 +464,6 @@ function formatDuration(seconds) {
     }
 
     return parts.join(" ");
-}
-
-
-function formatValue(value) {
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return "Not configured";
-    }
-
-    if (typeof value === "boolean") {
-        return value
-            ? "Enabled"
-            : "Disabled";
-    }
-
-    if (typeof value === "object") {
-        return JSON.stringify(value);
-    }
-
-    return String(value);
 }
 
 
@@ -835,25 +803,6 @@ function findNestedValue(
  * SERVICE SUBSCRIPTION
  * ---------------------------------------------------------
  */
-function getServiceAppName(attributes) {
-    for (const attr of attributes) {
-        const newValue =
-            parseJsonValue(attr?.new);
-
-        if (
-            newValue &&
-            typeof newValue === "object" &&
-            newValue.appName
-        ) {
-            return normalizeString(
-                newValue.appName
-            );
-        }
-    }
-
-    return "";
-}
-
 function getServiceDetails(attributes) {
     for (const attr of attributes) {
         const newValue =
@@ -985,30 +934,6 @@ function mapRoleAssignment(
  * DESTINATION
  * ---------------------------------------------------------
  */
-function getDestinationName(attributes) {
-    for (const attr of attributes) {
-        const newValue =
-            parseJsonValue(attr?.new);
-
-        if (!newValue) {
-            continue;
-        }
-
-        if (newValue.Name) {
-            return normalizeString(
-                newValue.Name
-            );
-        }
-
-        if (newValue.name) {
-            return normalizeString(
-                newValue.name
-            );
-        }
-    }
-
-    return "";
-}
 
 function getDestinationInfo(attributes) {
     const names = [];
@@ -1558,13 +1483,18 @@ function mapIdentityProvider(
     eventType,
     identityProviderMap
 ) {
+
     const changedAttributes =
         getChangedAttributes(
             attributes
         );
+    const objectType =
+        normalizeString(
+            context?.type
+        ).toLowerCase();
 
     if (
-        changedAttributes.length === 0
+        changedAttributes.length === 0 && objectType !== "xsidentityproviderid2status"
     ) {
         return null;
     }
@@ -1628,7 +1558,7 @@ function mapIdentityProvider(
 
     const identityProviderId =
         normalizeString(
-            context?.identityproviderid
+            context?.id?.identityproviderid
         );
 
     const mappedTrustName =
@@ -1641,7 +1571,7 @@ function mapIdentityProvider(
      * use the ID as fallback.
      */
     const trustName =
-        mappedTrustName ||
+        mappedTrustName?.name ||
         identityProviderId ||
         "Unknown";
 
@@ -1676,6 +1606,104 @@ function mapIdentityProvider(
         if (name === "status") {
             status = newValue;
         }
+    }
+
+    // Trust related changes 
+    if (
+        objectType ===
+        "xsidentityproviderid2status"
+    ) {
+        let operation = "";
+        let status = "";
+
+        for (const attr of attributes) {
+
+            const name =
+                normalizeString(
+                    attr?.name
+                ).toLowerCase();
+
+            const newValue =
+                normalizeString(
+                    attr?.new
+                ).toLowerCase();
+
+            if (name === "operation") {
+                operation = newValue;
+            }
+
+            if (name === "status") {
+                status = newValue;
+            }
+        }
+
+        /*
+         * Get actual changed fields.
+         * operation/status are metadata and should
+         * not be considered as the configuration change.
+         */
+        const changedFields =
+            getChangedAttributes(attributes)
+                .map(attr =>
+                    normalizeString(
+                        attr?.name
+                    )
+                )
+                .filter(
+                    field =>
+                        field &&
+                        field.toLowerCase() !== "operation" &&
+                        field.toLowerCase() !== "status"
+                );
+
+        /*
+         * Failed operation
+         */
+        if (status === "failed") {
+            return {
+                btpService: "Trust",
+                eventType:
+                    operation === "delete"
+                        ? "DELETE"
+                        : eventType,
+                actionPerformed:
+                    `Trust "${trustName}" ` +
+                    `${operation || "operation"} failed`
+            };
+        }
+
+        /*
+         * Delete / Create
+         */
+        if (operation === "delete") {
+            return {
+                btpService: "Trust",
+                eventType: "DELETE",
+                actionPerformed:
+                    `Trust "${trustName}" deleted`
+            };
+        }
+
+        if (operation === "create") {
+            return {
+                btpService: "Trust",
+                eventType: "CREATE",
+                actionPerformed:
+                    `Trust "${trustName}" created`
+            };
+        }
+
+        /*
+         * Update
+         */
+        return {
+            btpService: "Trust",
+            eventType: "UPDATE",
+            actionPerformed:
+                changedFields.length > 0
+                    ? `Trust "${trustName}" updated: ${changedFields.join(", ")}`
+                    : `Trust "${trustName}" updated`
+        };
     }
 
 
@@ -1906,7 +1934,7 @@ function mapGenericSubaccountSettings(
  * Returns an ARRAY because one raw message can contain
  * multiple logical records.
  */
-function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
+function mapConfigurationAuditLog(log, identityProviderMap, userMap,instanceMap) {
     if (!log) {
         return [];
     }
@@ -1929,8 +1957,10 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
             ? message.attributes
             : [];
 
-    const context =
-        getObjectContext(message);
+    const context = getObjectContext(message);
+
+    const onBehalfOf = context?.id?.onBehalfOf || "";
+
 
     const eventType =
         getEventType(
@@ -1943,8 +1973,12 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
             log.user
         );
 
-    const userId =
-        userMap?.get(rawUserId) ||
+    const effectiveUserId = onBehalfOf || rawUserId;
+
+    const cloneInstanceId = extractNormalizedCloneId(log.user);
+
+    const userId = (cloneInstanceId && instanceMap?.get(cloneInstanceId)) ||
+        userMap?.get(effectiveUserId) ||
         rawUserId;
 
     const timestamp =
@@ -2226,7 +2260,42 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
         return results;
     }
 
+    /*
+ * ----------------------------------------------
+ * Identity Provider Status (Trust)
+ * ----------------------------------------------
+ */
+    if (
+        objectTypeLower ===
+        "xsidentityproviderid2status"
+    ) {
+        const identityProvider =
+            mapIdentityProvider(
+                attributes,
+                context,
+                eventType,
+                identityProviderMap
+            );
 
+        if (identityProvider) {
+            results.push({
+                system: "BTP",
+                userId,
+                userRole: "",
+                eventType:
+                    identityProvider.eventType,
+                btpService:
+                    "Trust",
+                subAccount: null,
+                region: null,
+                actionPerformed:
+                    identityProvider.actionPerformed,
+                timestamp
+            });
+        }
+
+        return results;
+    }
     /*
      * ----------------------------------------------
      * Identity Provider
@@ -2380,61 +2449,6 @@ function mapConfigurationAuditLog(log, identityProviderMap, userMap) {
     }
 
     return results;
-}
-function consolidateConfigurationEntries(entries) {
-    const result = [];
-
-    const tokenEntries = [];
-    const otherEntries = [];
-
-    for (const entry of entries) {
-        if (
-            entry.btpService ===
-            "Subaccount Settings" &&
-            entry.actionPerformed?.startsWith(
-                "Access Token Validity:"
-            )
-        ) {
-            tokenEntries.push(entry);
-        } else {
-            otherEntries.push(entry);
-        }
-    }
-
-    /*
-     * If token validity generated multiple audit messages
-     * for the same timestamp/user/subaccount, keep only
-     * one logical reporting row.
-     */
-    const tokenGroups =
-        new Map();
-
-    for (const entry of tokenEntries) {
-        const timestamp =
-            entry.timestamp instanceof Date
-                ? entry.timestamp.getTime()
-                : String(entry.timestamp);
-
-        const key = [
-            entry.userId,
-            entry.subAccount,
-            timestamp
-        ].join("|");
-
-        if (!tokenGroups.has(key)) {
-            tokenGroups.set(
-                key,
-                entry
-            );
-        }
-    }
-
-    result.push(
-        ...otherEntries,
-        ...tokenGroups.values()
-    );
-
-    return result;
 }
 
 /**
@@ -2672,14 +2686,55 @@ function filterConfigurationEntries(entries) {
     });
 }
 
+/**
+ * -----------------------------
+ * Instance Map
+ * --------
+ */
+function buildInstanceMap(serviceInstancesResponse) {
+    const map = new Map();
+
+    const items = serviceInstancesResponse?.items || [];
+
+    for (const item of items) {
+        if (item?.id && item?.name) {
+            map.set(item.id.toLowerCase(), item.name);
+        }
+    }
+
+    return map;
+}
+/**
+ * ------------------------------------------
+ * extract normalized uuid from sb-clone for instance name
+ * -----------------------------------
+ */
+function extractNormalizedCloneId(rawUserId) {
+    if (!rawUserId || typeof rawUserId !== "string") {
+        return null;
+    }
+
+    const match = rawUserId.match(/^sb-clone([a-f0-9]{32})!/i);
+
+    if (!match) {
+        return null;
+    }
+
+    const hex = match[1];
+
+    return [
+        hex.slice(0, 8),
+        hex.slice(8, 12),
+        hex.slice(12, 16),
+        hex.slice(16, 20),
+        hex.slice(20, 32)
+    ].join("-").toLowerCase();
+}
+
 module.exports = {
     mapConfigurationAuditLog,
-    parseMessage,
-    parseJsonValue,
-    getChangedAttributes,
-    formatDuration,
     fetchConfigurationAuditLogs,
     deduplicateConfigurationEntries,
-    consolidateConfigurationEntries,
-    filterConfigurationEntries
+    filterConfigurationEntries,
+    buildInstanceMap
 };

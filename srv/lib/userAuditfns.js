@@ -1,6 +1,12 @@
 
  
 const axios = require("axios");
+const {processUserConfigLog} = require("./ProcessUserConfigLogs");
+/* ========================================================================= */
+
+/*  HELPER FUNCTIONS                                                         */
+
+/* ========================================================================= */
  
 /* Safely parse JSON.*/
 function safeJsonParse(value) {
@@ -1159,107 +1165,95 @@ async function fetchUserAuditLogs(
         }
  
         const data =
-            response.data;
- 
-        if (
-            Array.isArray(data)
-        ) {
-            records = data;
-        } else if (
-            Array.isArray(
-                data?.value
-            )
-        ) {
-            records =
-                data.value;
-        } else if (
-            Array.isArray(
-                data?.auditLogRecords
-            )
-        ) {
-            records =
-                data.auditLogRecords;
+            err.response?.data;
+
+        let details;
+
+        if (typeof data === "string") {
+
+            details = data;
+
+        } else if (data?.message) {
+
+            details = data.message;
+
+        } else if (data?.error_description) {
+
+            details =
+                data.error_description;
+
+        } else if (data?.error) {
+
+            details = data.error;
+
+        } else {
+
+            details = err.message;
         }
- 
-    } catch (error) {
-        console.error(
-            "USER AUDIT API ERROR"
+
+        throw new Error(
+            `Failed to fetch configuration audit logs for ${
+                subaccountName || "Unknown"
+            }` +
+            `${status ? ` (HTTP ${status})` : ""}: ${details}`
         );
- 
-        console.error(
-            `Subaccount: ${
-                connection.subaccountName ||
-                "Unknown"
-            }`
-        );
- 
-        console.error(
-            "HTTP status:",
-            error.response?.status
-        );
- 
-        console.error(
-            "Response:",
-            typeof error.response?.data === "string"
-                ? error.response.data
-                : JSON.stringify(
-                    error.response?.data || {}
-                )
-        );
- 
-        console.error(
-            "Error:",
-            error.message
-        );
- 
-        throw error;
     }
- 
-    const mappedRecords = [];
- 
-    records.forEach(
-        (log, index) => {
-            try {
-                const mapped =
-                    mapAuditLog(
-                        log,
-                        connection,
-                        subaccountName
-                    );
- 
-                mappedRecords.push(
-                    mapped
-                );
- 
-                if (
-                    index < 10
-                ) {
-                    console.log(
-                        `Mapped User Audit Record ${
-                            index + 1
-                        }:`,
-                        JSON.stringify(
-                            mapped,
-                            null,
-                            2
-                        )
-                    );
-                }
- 
-            } catch (err) {
-                console.error(
-                    `Error mapping User Audit record ${
-                        index + 1
-                    }:`,
-                    err.message
-                );
-            }
-        }
-    );
- 
-    return mappedRecords;
 }
- 
+
+function getSecondPrecisionTimestamp(timestamp) {
+    if (!timestamp) {
+        return "";
+    }
+
+    const date =
+        timestamp instanceof Date
+            ? timestamp
+            : new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(timestamp);
+    }
+
+    return date.toISOString().slice(0, 19);
+}
+function deduplicateUserAuditEntries(entries) {
+
+    const unique = new Map();
+
+    for (const entry of entries) {
+
+        const timestamp =
+            getSecondPrecisionTimestamp(
+                entry.timestamp
+            );
+
+        const key = [
+            entry.system || "",
+            entry.userId || "",
+            entry.userName || "",
+            entry.userType || "",
+            entry.roleCollection || "",
+            entry.eventType || "",
+            entry.event || "",
+            entry.fieldChanged || "",
+            entry.oldValue || "",
+            entry.newValue || "",
+            entry.performedBy || "",
+            entry.userRole || "",
+            entry.status || "",
+            entry.subaccount || "",
+            timestamp
+        ].join("|");
+
+        if (!unique.has(key)) {
+            unique.set(key, entry);
+        }
+    }
+
+    return Array.from(
+        unique.values()
+    );
+}
 module.exports = {
     fetchUserAuditLogs,
     mapAuditLog

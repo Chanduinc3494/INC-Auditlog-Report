@@ -112,8 +112,8 @@ Content-Type: application/json
     "createdAt": null,
     "createdBy": null,
     "isRunning": false,
-    "lastRunAt": null,
-    "lastSyncAt": "2026-08-25T00:00:00Z",
+    "lastRunAt": "2026-08-21T03:00:00Z",
+    "lastSyncAt": "2026-08-21T00:00:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",
@@ -121,23 +121,11 @@ Content-Type: application/json
     "modifiedBy": null,
     "reportName": "USER_AUDIT"
 }
-###
-POST http://localhost:4004/odata/v4/audit-logging-and-reporting/BTPServiceTypeVH
+
+### Purge Config data
+POST http://localhost:4004/odata/v4/audit-logging-and-reporting/purgeConfigurationData
 Content-Type: application/json
 
 {
-    "code":"SAAS_MANAGER"
+    "fromTimestamp": "2026-08-21T00:00:00Z"
 }
-
-
-###
-
-POST http://localhost:4004/odata/v4/audit-logging-and-reporting/syncUserAuditLogs
-Content-Type: application/json
-
-{}
-
-
-### Synchronize Configuration Audit Logs
-POST http://localhost:4004/odata/v4/audit-logging-and-reporting/syncConfigurationAuditLogs
-Content-Type: application/json
