@@ -23,8 +23,9 @@ const { fetchIdentityProviderMapForSubaccount } = require("./lib/audit/configura
 const { fetchUserMapForSubaccount } = require("./lib/audit/configurationAudit/platformUserData");
 const { fetchSubaccountMapConfig } = require("./lib/audit/configurationAudit/subaccountData");
 const { processUserConfigLog } = require("./lib/audit/configurationAudit/ProcessUserConfigLogs");
+const { mapServiceBindingAndKeyAuditLogs } = require("./lib/audit/configurationAudit/serviceBindingandKeysData")
 const { fetchConfigurationAuditLogs, mapConfigurationAuditLog, deduplicateConfigurationEntries, filterConfigurationEntries, buildInstanceMap } = require("./lib/audit/configurationAudit/configurationAuditFunctions");
-
+const { fetchServiceBindingAndKeyAuditLogs } = require("./lib/api/cf/CfAudit");
 
 //Service Functions
 const { fetchServiceData } = require("./lib/audit/serviceAudit/serviceData");
@@ -35,7 +36,7 @@ const { fetchSubaccountsData } = require("./lib/audit/roleAudit/subaccountData")
 const { fetchAndMapRoleLogs } = require("./lib/audit/roleAudit/roleAuditData");
 
 //user Audit Functions
-const { fetchUserAuditLogs, fetchUserConfigLogs, deduplicateUserAuditEntries, consolidateUserPersonaRecords} = require("./lib/userAuditfns")
+const { fetchUserAuditLogs, fetchUserConfigLogs, deduplicateUserAuditEntries, consolidateUserPersonaRecords } = require("./lib/userAuditfns")
 
 
 module.exports = cds.service.impl(async function () {
@@ -649,7 +650,7 @@ module.exports = cds.service.impl(async function () {
                 const subaccountName = subaccountDetails?.subdomain || connection.subaccountId;
                 const region = subaccountDetails?.region || null;
 
-                // identity provider for trust
+                //identity provider for trust
                 const identityProviderMap = await fetchIdentityProviderMapForSubaccount({
                     BTPConnection,
                     subaccountId: connection.subaccountId,
@@ -771,6 +772,72 @@ module.exports = cds.service.impl(async function () {
 
                     continue;
                 }
+
+                // to fetch CF audit logs
+
+                try {
+
+                    const cfConnection =
+                        await SELECT.one
+                            .from(BTPConnection)
+                            .where({
+                                serviceType: "CLOUD_FOUNDRY",
+                                active: true,
+                                subaccountId: connection.subaccountId
+                            });
+                    
+                    if (!cfConnection) {
+                        throw new Error(
+                            `No active CLOUD_FOUNDRY connection found for subaccount ` +
+                            `${connection.subaccountId}`
+                        );
+                    }
+                    const cftoken =
+                        await cfAuth.getToken(
+                            cfConnection
+                        );
+
+                    if (!cftoken) {
+                        throw new Error(
+                            "Cloud Foundry OAuth token was not returned."
+                        );
+                    }
+                    
+                    const serviceBindingKeyLogs =
+                        await fetchServiceBindingAndKeyAuditLogs(
+                            cfConnection.apiBaseUrl,
+                            cftoken,
+                            timeFrom,
+                            timeTo
+                        );
+                   
+                    const mappedEntries =
+                        mapServiceBindingAndKeyAuditLogs(
+                            serviceBindingKeyLogs,
+                            {
+                                connection: {
+                                    ...connection,
+                                    subaccountName,
+                                    region
+                                },
+                                instanceMap,
+                                userMap
+                            }
+                        );
+
+                    entries.push(
+                        ...mappedEntries
+                    );
+
+                } catch (error) {
+
+                    failedConnections.push({
+                        api: "CF_AUDIT_EVENTS",
+                        operation: "SERVICE_BINDING_SERVICE_KEY",
+                        subaccountId: connection.subaccountId,
+                        error: error.message
+                    });
+                }
             }
 
 
@@ -885,7 +952,7 @@ module.exports = cds.service.impl(async function () {
         }
     });
 
-    
+
     // this.on("syncUserAuditLogs", async () => {
     //     // get the sync status
     //     const syncStatus = await SELECT.one
@@ -1420,7 +1487,7 @@ module.exports = cds.service.impl(async function () {
                 try {
                     const accountsToken = await oAuthManager.getToken(accountsConnection);
 
-                    const { subaccountMap: fetchedMap, failures: accountFailures } = 
+                    const { subaccountMap: fetchedMap, failures: accountFailures } =
                         await fetchSubaccount(
                             accountsConnection.apiBaseUrl,
                             accountsToken,
@@ -1485,12 +1552,12 @@ module.exports = cds.service.impl(async function () {
                         throw new Error("XSUAA OAuth token was not returned.");
                     }
 
-                    const { userMapping, failures: identityFailures } = 
+                    const { userMapping, failures: identityFailures } =
                         await fetchIdentityUsers(
                             userConnection.apiBaseUrl,
                             userToken
                         );
-                    
+
                     userMap = userMapping;
                     failedConnections.push(...(identityFailures || []));
 
@@ -1588,7 +1655,7 @@ module.exports = cds.service.impl(async function () {
 
             // Step 1: Remove immediate duplicate payload logs
             const deduplicatedEntries = deduplicateUserAuditEntries(entries);
-            
+
             // Step 2: Keep only the single latest record per user persona
             const processedEntries = consolidateUserPersonaRecords(deduplicatedEntries);
 
@@ -1745,7 +1812,7 @@ module.exports = cds.service.impl(async function () {
         const { fromTimestamp } = req.data;
         const timestamp = new Date(fromTimestamp);
         await DELETE
-            .from(RoleAuditReport)
+            .from(ConfigurationReport)
             .where({
                 timestamp: { ">=": timestamp }
             });
@@ -1758,7 +1825,7 @@ module.exports = cds.service.impl(async function () {
                     `Configuration data purged from ${timestamp.toISOString()}`
             })
             .where({
-                reportName: "ROLE_AUDIT"
+                reportName: "CONFIGURATION"
             });
 
         return `Configuration data purged from ${timestamp.toISOString()}`;
