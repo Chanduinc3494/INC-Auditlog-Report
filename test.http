@@ -137,8 +137,8 @@ Content-Type: application/json
     "createdAt": null,
     "createdBy": null,
     "isRunning": false,
-    "lastRunAt": null,
-    "lastSyncAt": "2026-08-18T00:00:00Z",
+    "lastRunAt": "2026-08-27T05:47:00Z",
+    "lastSyncAt": "2026-08-27T05:47:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",
@@ -156,8 +156,8 @@ Content-Type: application/json
     "createdAt": null,
     "createdBy": null,
     "isRunning": false,
-    "lastRunAt": "2026-08-24T06:00:00Z",
-    "lastSyncAt": "2026-08-24T05:50:00Z",
+    "lastRunAt": "2026-08-27T05:00:00Z",
+    "lastSyncAt": "2026-08-27T05:50:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",
@@ -175,8 +175,8 @@ Content-Type: application/json
     "createdAt": null,
     "createdBy": null,
     "isRunning": false,
-    "lastRunAt": "2026-08-24T13:00:00Z",
-    "lastSyncAt": "2026-08-24T09:00:00Z",
+    "lastRunAt": "2026-08-27T05:00:00Z",
+    "lastSyncAt": "2026-08-27T05:00:00Z",
     "lastSyncBy": null,
     "lastSyncStatus": "SUCCESS",
     "message": "Not synchronized yet",
@@ -184,10 +184,29 @@ Content-Type: application/json
     "modifiedBy": null,
     "reportName": "CONFIGURATION"
 }
+
+### update service report
+PUT  http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('44444444-4444-4444-8444-444444444444')
+Content-Type: application/json
+
+{
+      "ID": "44444444-4444-4444-8444-444444444444",
+      "createdAt": null,
+      "createdBy": null,
+      "isRunning": false,
+      "lastRunAt": "2026-08-27T04:47:26.052Z",
+      "lastSyncAt": null,
+      "lastSyncBy": null,
+      "lastSyncStatus": "SUCCESS",
+      "message": "Synchronization completed. All APIs processed successfully.",
+      "modifiedAt": "2026-08-27T04:47:22.118Z",
+      "modifiedBy": "aniketkumar.singh@incture.com",
+      "reportName": "SERVICE_AUDIT"
+    }
 ### Purge Config data
 POST http://localhost:4004/odata/v4/audit-logging-and-reporting/purgeConfigurationData
 Content-Type: application/json
 
 {
-    "fromTimestamp": "2026-08-25T09:10:00Z"
+    "fromTimestamp": "2026-08-27T00:00"
 }

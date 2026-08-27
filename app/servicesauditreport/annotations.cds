@@ -119,7 +119,8 @@ annotate service.ServiceAuditReports with @(
     UI.SelectionFields : [
         system,
         subaccount,
-        serviceName
+        serviceName,
+        planName,
     ],
     UI.LineItem : [
         {

@@ -111,5 +111,6 @@ entity ReportSyncStatus : cuid, managed {
     // RUNNING
     lastSyncBy     : String(100);
     message        : String(500);
+    firstSyncAt    : Timestamp;
     isRunning      : Boolean default false;
 }
