@@ -587,6 +587,11 @@ async function fetchUserAuditLogs(connection, token, timeFrom, timeTo, subaccoun
     }
 }
 
+/**
+ * ----------------------------------------------------------------------------
+ * Fetch the User configuration Logs 
+ * --------------------------------------------------------------------------
+ */
 async function fetchUserConfigLogs(
     connection,
     token,
@@ -721,6 +726,11 @@ function normalizeUserId(user) {
     return value;
 }
 
+/**
+ * ------------------------------------------------------------------------
+ * Remove the duplicated rows from the array of enteries 
+ * ---------------------------------------------------------------------
+ */
 function deduplicateUserAuditEntries(entries) {
     const unique = new Map();
 
@@ -754,7 +764,7 @@ function deduplicateUserAuditEntries(entries) {
 }
 
 /* ========================================================================= */
-/*  NEW METHOD: USER PERSONA RECORD CONSOLIDATION                            */
+/*  USER PERSONA RECORD CONSOLIDATION                            */
 /* ========================================================================= */
 
 /**
@@ -802,8 +812,8 @@ function consolidateUserPersonaRecords(entries) {
 }
 
 module.exports = {
-    fetchUserConfigLogs,
     fetchUserAuditLogs,
+    fetchUserConfigLogs,
     deduplicateUserAuditEntries,
     consolidateUserPersonaRecords
 };
