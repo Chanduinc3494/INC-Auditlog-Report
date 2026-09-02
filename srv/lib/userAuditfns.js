@@ -434,7 +434,7 @@ function determineEvent(userInfo) {
 function mapAuditLog(log, connection, subaccountName) {
     const userInfo = extractUserInformation(log);
     const eventInfo = determineEvent(userInfo);
-
+    
     if (!eventInfo) {
         return null;
     }
