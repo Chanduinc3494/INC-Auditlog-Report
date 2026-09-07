@@ -36,14 +36,14 @@ const { fetchSubaccountsData } = require("./lib/audit/roleAudit/subaccountData")
 const { fetchAndMapRoleLogs } = require("./lib/audit/roleAudit/roleAuditData");
 
 // Status helper
-const {acquireSyncLock} = require("./lib/helper/StatusHelper");
+const { acquireSyncLock } = require("./lib/helper/StatusHelper");
 const {
     fetchUserAuditLogs,
     fetchUserConfigLogs,
     deduplicateUserAuditEntries,
     consolidateUserPersonaRecords
 } = require("./lib/audit/userAudit/userAuditfns");
-
+const {fetchIdentityUsers} = require("./lib/api/identity/identityProviderApi");
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
     const {
@@ -86,9 +86,9 @@ module.exports = cds.service.impl(async function () {
     this.on("syncServiceLogs", async (req) => {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-       
+
         //sync status
-         const lockResult = await acquireSyncLock({
+        const lockResult = await acquireSyncLock({
             reportName: "SERVICE_AUDIT",
             SELECT,
             INSERT,
@@ -278,7 +278,7 @@ module.exports = cds.service.impl(async function () {
                         lastRunAt: new Date(),
                         lastSyncStatus: finalSyncStatus,
                         isRunning: false,
-                         runningSince: null,
+                        runningSince: null,
                         firstSyncAt: firstSyncAt,
                         message: message
                     })
@@ -293,7 +293,7 @@ module.exports = cds.service.impl(async function () {
                         lastRunAt: new Date(),
                         lastSyncStatus: finalSyncStatus,
                         isRunning: false,
-                         runningSince: null,
+                        runningSince: null,
                         message: message
                     })
                     .where({
@@ -303,7 +303,7 @@ module.exports = cds.service.impl(async function () {
 
 
 
-           return {
+            return {
                 status: finalSyncStatus,
                 message: message,
                 failures: failedConnections
@@ -443,9 +443,11 @@ module.exports = cds.service.impl(async function () {
                     : "SUCCESS";
 
             const message =
-                `Synchronization completed. ` +
-                `${entries.length} Role Audit records processed.`;
-
+                failedConnections.length > 0
+                    ? `Synchronization completed with ${failedConnections.length} API failure(s). ` +
+                    `${entries.length} Role Audit records processed.`
+                    : `Synchronization completed successfully. ` +
+                    `${entries.length} Role Audit records processed.`;
             await cds.tx(async (tx) => {
                 await tx.run(
                     UPDATE(ReportSyncStatus)
@@ -499,7 +501,7 @@ module.exports = cds.service.impl(async function () {
             threeMonthAgo.setMonth(threeMonthAgo.getMonth() - 3);
 
             //Sync status
-             const lockResult = await acquireSyncLock({
+            const lockResult = await acquireSyncLock({
                 reportName: "CONFIGURATION",
                 SELECT,
                 INSERT,
@@ -541,7 +543,7 @@ module.exports = cds.service.impl(async function () {
                             formatAuditTimestamp(
                                 new Date()
                             ),
-                        
+
                         message:
                             "No active Audit Log connections found."
                     })
@@ -908,24 +910,24 @@ module.exports = cds.service.impl(async function () {
     this.on("syncUserAuditLogs", async () => {
 
         // the sync status
-       const lockResult = await acquireSyncLock({
-        reportName: "USER_AUDIT",
-        SELECT,
-        INSERT,
-        UPDATE,
-        ReportSyncStatus
-    });
+        const lockResult = await acquireSyncLock({
+            reportName: "USER_AUDIT",
+            SELECT,
+            INSERT,
+            UPDATE,
+            ReportSyncStatus
+        });
 
-    if (!lockResult.acquired) {
-        return {
-            status: "RUNNING",
-            message: "User Audit synchronization is already running.",
-            failures: []
-        };
-    }
+        if (!lockResult.acquired) {
+            return {
+                status: "RUNNING",
+                message: "User Audit synchronization is already running.",
+                failures: []
+            };
+        }
 
-    const syncStatus = lockResult.syncStatus;
-    const syncStatusId = syncStatus.ID;
+        const syncStatus = lockResult.syncStatus;
+        const syncStatusId = syncStatus.ID;
         try {
 
             let failedConnections = [];
@@ -949,7 +951,7 @@ module.exports = cds.service.impl(async function () {
                     lastRunAt: timeTo,
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
-                     runningSince: null,
+                    runningSince: null,
                     ID: syncStatusId,
                     message: "No active Audit Log connections found."
                 });
@@ -1311,7 +1313,7 @@ module.exports = cds.service.impl(async function () {
                     lastRunAt: timeTo,
                     lastSyncStatus: finalSyncStatus,
                     isRunning: false,
-                     runningSince: null,
+                    runningSince: null,
                     ID: syncStatusId,
                     message: message
                 });
@@ -1423,7 +1425,7 @@ module.exports = cds.service.impl(async function () {
                             lastSyncStatus: syncResult,
 
                             isRunning: false,
-                             runningSince: null,
+                            runningSince: null,
                             message: syncMessage
                         })
                         .where({
