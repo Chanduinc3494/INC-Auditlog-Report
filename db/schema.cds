@@ -36,6 +36,7 @@ entity RoleAuditReport : cuid {
     status          : String(20); // Status
     subaccountName  : String(100); // Subaccount Name
 }
+
 // @assert.unique.auditEntry: [messageId]
 entity ConfigurationReport : cuid {
     system          : String(50);
@@ -112,5 +113,6 @@ entity ReportSyncStatus : cuid, managed {
     lastSyncBy     : String(100);
     message        : String(500);
     firstSyncAt    : Timestamp;
+    runningSince   : Timestamp;
     isRunning      : Boolean default false;
 }

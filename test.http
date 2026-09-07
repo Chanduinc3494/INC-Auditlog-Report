@@ -210,3 +210,13 @@ Content-Type: application/json
 {
     "fromTimestamp": "2026-08-27T02:10"
 }
+
+
+### update status
+PATCH http://localhost:4004/odata/v4/audit-logging-and-reporting/ReportSyncStatus('44444444-4444-4444-8444-444444444444')
+Content-Type: application/json
+
+{
+  "isRunning": false,
+  "lastSyncAt":null
+}

@@ -35,8 +35,8 @@ const { fetchInstanceUsers } = require("./lib/audit/serviceAudit/serviceUsers");
 const { fetchSubaccountsData } = require("./lib/audit/roleAudit/subaccountData");
 const { fetchAndMapRoleLogs } = require("./lib/audit/roleAudit/roleAuditData");
 
-//user Audit Functions
-
+// Status helper
+const {acquireSyncLock} = require("./lib/helper/StatusHelper");
 const {
     fetchUserAuditLogs,
     fetchUserConfigLogs,
@@ -86,15 +86,16 @@ module.exports = cds.service.impl(async function () {
     this.on("syncServiceLogs", async (req) => {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        // Fetch sync status
-        let syncStatus = await SELECT.one
-            .from(ReportSyncStatus)
-            .where({
-                reportName: "SERVICE_AUDIT"
-            });
-
-        // Prevent concurrent synchronization
-        if (syncStatus?.isRunning) {
+       
+        //sync status
+         const lockResult = await acquireSyncLock({
+            reportName: "SERVICE_AUDIT",
+            SELECT,
+            INSERT,
+            UPDATE,
+            ReportSyncStatus
+        });
+        if (!lockResult.acquired) {
             return {
                 status: "RUNNING",
                 message:
@@ -103,42 +104,16 @@ module.exports = cds.service.impl(async function () {
             };
         }
 
-        const isFirstSync = !syncStatus?.lastSyncAt;
+        let syncStatus = lockResult.syncStatus;
+        const isFirstSync = lockResult.isFirstSync;
+
         let firstSyncAt;
         if (isFirstSync) {
             firstSyncAt = threeMonthsAgo;
         } else {
             firstSyncAt = new Date(syncStatus.firstSyncAt);
         }
-        console.log(firstSyncAt);
-        // Mark synchronization as running
-        if (!syncStatus) {
 
-            await INSERT
-                .into(ReportSyncStatus)
-                .entries({
-                    reportName: "SERVICE_AUDIT",
-                    lastSyncStatus: "RUNNING",
-                    isRunning: true
-                });
-
-            syncStatus = {
-                reportName: "SERVICE_AUDIT",
-                lastSyncAt: null,
-                isRunning: true
-            };
-
-        } else {
-            console.log(syncStatus);
-            await UPDATE(ReportSyncStatus)
-                .set({
-                    isRunning: true,
-                    lastSyncStatus: "RUNNING"
-                })
-                .where({
-                    reportName: "SERVICE_AUDIT"
-                });
-        }
         const failedConnections = []; // store all failures 
 
         try {
@@ -303,6 +278,7 @@ module.exports = cds.service.impl(async function () {
                         lastRunAt: new Date(),
                         lastSyncStatus: finalSyncStatus,
                         isRunning: false,
+                         runningSince: null,
                         firstSyncAt: firstSyncAt,
                         message: message
                     })
@@ -317,6 +293,7 @@ module.exports = cds.service.impl(async function () {
                         lastRunAt: new Date(),
                         lastSyncStatus: finalSyncStatus,
                         isRunning: false,
+                         runningSince: null,
                         message: message
                     })
                     .where({
@@ -326,7 +303,7 @@ module.exports = cds.service.impl(async function () {
 
 
 
-            return {
+           return {
                 status: finalSyncStatus,
                 message: message,
                 failures: failedConnections
@@ -342,6 +319,7 @@ module.exports = cds.service.impl(async function () {
                     lastRunAt: new Date(),
                     lastSyncStatus: "FAILED",
                     isRunning: false,
+                    runningSince: null,
                     message: errorMessage
                 })
                 .where({
@@ -359,34 +337,25 @@ module.exports = cds.service.impl(async function () {
         const threeMonthAgo = new Date();
         threeMonthAgo.setMonth(threeMonthAgo.getMonth() - 3);
         try {
-            // fetching sync status
-            let syncStatus = await SELECT.one.from(ReportSyncStatus).where({ reportName: "ROLE_AUDIT" });
-            if (syncStatus?.isRunning) {
+            // sync status
+            const lockResult = await acquireSyncLock({
+                reportName: "ROLE_AUDIT",
+                SELECT,
+                INSERT,
+                UPDATE,
+                ReportSyncStatus
+            });
+            if (!lockResult.acquired) {
                 return {
                     status: "RUNNING",
-                    message: "Role audit synchronization is already running.",
+                    message:
+                        "Role audit synchronization is already running.",
                     processedRecords: 0,
                     failures: []
                 };
             }
-            if (!syncStatus) {
-                await INSERT.into(ReportSyncStatus).entries({
-                    reportName: "ROLE_AUDIT",
-                    lastSyncStatus: "RUNNING",
-                    isRunning: true,
-                    lastSyncAt: formatAuditTimestamp(threeMonthAgo),
-                });
-            }
-            else {
-                await UPDATE(ReportSyncStatus)
-                    .set({
-                        isRunning: true,
-                        lastSyncStatus: "RUNNING"
-                    })
-                    .where({
-                        reportName: "ROLE_AUDIT"
-                    });
-            }
+            const syncStatus = lockResult.syncStatus;
+
 
             const failedConnections = []; // to store failed connections
             // fetching subaccount credentials of type audit logs
@@ -489,6 +458,7 @@ module.exports = cds.service.impl(async function () {
                             lastRunAt: timeTo,
                             lastSyncStatus: syncResult,
                             isRunning: false,
+                            runningSince: null,
                             message: message
                         })
                         .where({
@@ -511,6 +481,7 @@ module.exports = cds.service.impl(async function () {
                     lastRunAt: new Date(),
                     lastSyncStatus: "FAILED",
                     isRunning: false,
+                    runningSince: null,
                     message: errorMessage
                 })
                 .where({
@@ -527,51 +498,26 @@ module.exports = cds.service.impl(async function () {
             const threeMonthAgo = new Date();
             threeMonthAgo.setMonth(threeMonthAgo.getMonth() - 3);
 
-            //Fetch sync status
-            let syncStatus = await SELECT.one
-                .from(ReportSyncStatus)
-                .where({
-                    reportName: "CONFIGURATION"
-                });
+            //Sync status
+             const lockResult = await acquireSyncLock({
+                reportName: "CONFIGURATION",
+                SELECT,
+                INSERT,
+                UPDATE,
+                ReportSyncStatus
+            });
 
-            if (syncStatus?.isRunning) {
+            if (!lockResult.acquired) {
                 return {
                     status: "RUNNING",
-                    message: "Configuration audit synchronization is already running.",
+                    message:
+                        "Configuration audit synchronization is already running.",
                     processedRecords: 0,
                     failures: []
                 };
             }
 
-
-            if (!syncStatus) {
-                await INSERT
-                    .into(ReportSyncStatus)
-                    .entries({
-                        reportName: "CONFIGURATION",
-                        lastSyncStatus: "RUNNING",
-                        isRunning: true
-                    });
-
-
-                // for sync status
-                syncStatus = {
-                    reportName: "CONFIGURATION",
-                    lastSyncAt: null
-                };
-
-            } else {
-
-                await UPDATE(ReportSyncStatus)
-                    .set({
-                        isRunning: true,
-                        lastSyncStatus: "RUNNING"
-                    })
-                    .where({
-                        reportName: "CONFIGURATION"
-                    });
-            }
-
+            const syncStatus = lockResult.syncStatus;
             // Failures
             const failedConnections = [];
 
@@ -590,10 +536,12 @@ module.exports = cds.service.impl(async function () {
                     .set({
                         lastSyncStatus: "SUCCESS",
                         isRunning: false,
+                        runningSince: null,
                         lastRunAt:
                             formatAuditTimestamp(
                                 new Date()
                             ),
+                        
                         message:
                             "No active Audit Log connections found."
                     })
@@ -916,6 +864,7 @@ module.exports = cds.service.impl(async function () {
                             lastRunAt: timeTo,
                             lastSyncStatus: finalSyncStatus,
                             isRunning: false,
+                            runningSince: null,
                             message: message
                         })
                         .where({
@@ -946,6 +895,7 @@ module.exports = cds.service.impl(async function () {
                     lastSyncStatus: "FAILED",
 
                     isRunning: false,
+                    runningSince: null,
                     message: err.message
                 })
                 .where({
@@ -957,30 +907,25 @@ module.exports = cds.service.impl(async function () {
     // ====================== user report sync ======================
     this.on("syncUserAuditLogs", async () => {
 
-        // 1. Get the sync status
-        const syncStatus = await SELECT.one
-            .from(ReportSyncStatus)
-            .where({
-                reportName: "USER_AUDIT"
-            });
+        // the sync status
+       const lockResult = await acquireSyncLock({
+        reportName: "USER_AUDIT",
+        SELECT,
+        INSERT,
+        UPDATE,
+        ReportSyncStatus
+    });
 
-        if (syncStatus?.isRunning) {
-            return {
-                status: "RUNNING",
-                message: "User Audit synchronization is already running.",
-                failures: []
-            };
-        }
+    if (!lockResult.acquired) {
+        return {
+            status: "RUNNING",
+            message: "User Audit synchronization is already running.",
+            failures: []
+        };
+    }
 
-        const syncStatusId = syncStatus?.ID || cds.utils.uuid();
-
-        await UPSERT.into(ReportSyncStatus).entries({
-            ID: syncStatusId,
-            reportName: "USER_AUDIT",
-            lastSyncStatus: "RUNNING",
-            isRunning: true
-        });
-
+    const syncStatus = lockResult.syncStatus;
+    const syncStatusId = syncStatus.ID;
         try {
 
             let failedConnections = [];
@@ -1004,6 +949,7 @@ module.exports = cds.service.impl(async function () {
                     lastRunAt: timeTo,
                     lastSyncStatus: "SUCCESS",
                     isRunning: false,
+                     runningSince: null,
                     ID: syncStatusId,
                     message: "No active Audit Log connections found."
                 });
@@ -1365,6 +1311,7 @@ module.exports = cds.service.impl(async function () {
                     lastRunAt: timeTo,
                     lastSyncStatus: finalSyncStatus,
                     isRunning: false,
+                     runningSince: null,
                     ID: syncStatusId,
                     message: message
                 });
@@ -1476,7 +1423,7 @@ module.exports = cds.service.impl(async function () {
                             lastSyncStatus: syncResult,
 
                             isRunning: false,
-
+                             runningSince: null,
                             message: syncMessage
                         })
                         .where({
@@ -1511,7 +1458,7 @@ module.exports = cds.service.impl(async function () {
                             lastSyncStatus: "FAILED",
 
                             isRunning: false,
-
+                            runningSince: null,
                             message: err.message
                         })
                         .where({
