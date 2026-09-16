@@ -188,15 +188,6 @@ service auditLoggingAndReportingService {
         }
         group by
             btpService;
-
-    @readonly
-    entity ConfigRoleCollectionVH as
-        select from db.ConfigurationReport {
-            key userRole as roleCollection
-        }
-        group by
-            userRole;
-
     @readonly
     entity ConfigEventVH          as
         select from db.ConfigurationReport {

@@ -29,7 +29,6 @@ entity RoleAuditReport : cuid {
     event           : String(100); // Event
     timestamp       : Timestamp; // Timestamp (UTC)
     changedByUserId : String(100); // Changed By (User ID)
-    userRole        : String(100); // User Role
     fieldChanged    : String(100); // Field
     oldValue        : String(255); // Old Value
     newValue        : String(255); // New Value
@@ -41,7 +40,6 @@ entity RoleAuditReport : cuid {
 entity ConfigurationReport : cuid {
     system          : String(50);
     userId          : String(100);
-    userRole        : String(50);
     eventType       : String(50);
     btpService      : String(100);
     subAccount      : String(100);
