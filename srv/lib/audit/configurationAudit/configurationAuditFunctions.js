@@ -4,7 +4,8 @@ async function fetchConfigurationAuditLogs(
     baseUrl,
     token,
     timeFrom,
-    timeTo
+    timeTo,
+    processPage
 ) {
     if (!baseUrl) {
         throw new Error(
@@ -30,10 +31,14 @@ async function fetchConfigurationAuditLogs(
         );
     }
 
+    if (typeof processPage !== "function") {
+        throw new Error(
+            "Configuration audit log page processor is missing."
+        );
+    }
+
     const normalizedBaseUrl =
         String(baseUrl).replace(/\/+$/, "");
-
-    const allLogs = [];
 
     let handle = null;
     let page = 0;
@@ -46,14 +51,17 @@ async function fetchConfigurationAuditLogs(
 
             const url = handle
                 ? `${normalizedBaseUrl}` +
-                `/auditlog/v2/auditlogrecords` +
-                `?handle=${encodeURIComponent(handle)}`
+                  `/auditlog/v2/auditlogrecords` +
+                  `?handle=${encodeURIComponent(handle)}`
                 : `${normalizedBaseUrl}` +
-                `/auditlog/v2/auditlogrecords` +
-                `?category=audit.configuration` +
-                `&time_from=${encodeURIComponent(timeFrom)}` +
-                `&time_to=${encodeURIComponent(timeTo)}`;
+                  `/auditlog/v2/auditlogrecords` +
+                  `?category=audit.configuration` +
+                  `&time_from=${encodeURIComponent(timeFrom)}` +
+                  `&time_to=${encodeURIComponent(timeTo)}`;
 
+            console.log(
+                `[AUDIT CONFIGURATION] Loading Page ${page}...`
+            );
 
             const start = Date.now();
 
@@ -71,23 +79,21 @@ async function fetchConfigurationAuditLogs(
                     timeout: 300000
                 }
             );
-            // No record
+
+            // No records
             if (response.status === 204) {
+
                 console.log(
-                    `[AUDIT LOG] No configuration audit logs found. Page ${page}.`
+                    `[AUDIT CONFIGURATION] No records found. Page ${page}.`
                 );
 
-                return allLogs;
+                break;
             }
-
 
             const duration =
                 Date.now() - start;
 
-
-
-
-            // Audit Log API returns an array
+            // Audit Log API must return an array
             if (
                 !Array.isArray(
                     response.data
@@ -100,26 +106,33 @@ async function fetchConfigurationAuditLogs(
                 );
             }
 
-
-            allLogs.push(
-                ...response.data
+            console.log(
+                `[AUDIT CONFIGURATION] Page ${page} loaded successfully | ` +
+                `Records in page: ${response.data.length} | ` +
+                `Time: ${duration} ms`
             );
 
+            /*
+             * Process this page immediately.
+             *
+             * No allLogs array is maintained.
+             */
+            await processPage(
+                response.data
+            );
 
-            // Get pagination handle
+            /*
+             * Get pagination handle
+             */
             handle =
                 extractHandle(
                     response.headers?.paging
                 );
 
-
             if (!handle) {
                 break;
             }
         }
-
-        return allLogs;
-
 
     } catch (err) {
 
@@ -129,9 +142,7 @@ async function fetchConfigurationAuditLogs(
         const data =
             err.response?.data;
 
-
         let details;
-
 
         if (typeof data === "string") {
 
@@ -160,7 +171,6 @@ async function fetchConfigurationAuditLogs(
                 err.message;
         }
 
-
         throw new Error(
             `Failed to fetch configuration audit logs` +
             `${status ? ` (HTTP ${status})` : ""}: ` +
@@ -176,17 +186,16 @@ function extractHandle(pagingHeader) {
         return null;
     }
 
-
     const match =
         pagingHeader.match(
             /handle=([^;]+)/
         );
 
-
     return match
         ? match[1]
         : null;
 }
+
 
 // configurationAuditMapper.js
 

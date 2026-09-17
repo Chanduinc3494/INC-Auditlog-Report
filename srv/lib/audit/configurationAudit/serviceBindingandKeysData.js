@@ -195,7 +195,7 @@ function mapServiceBindingAndKeyAuditLogs(
         });
     }
 
-    console.log("Enteries",entries);
+   
     return entries;
 }
 
