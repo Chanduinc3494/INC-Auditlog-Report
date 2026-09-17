@@ -75,9 +75,9 @@ async function fetchRoleLogs(baseUrl, token, timeFrom, timeTo) {
             const url = handle
                 ? `${baseUrl}/auditlog/v2/auditlogrecords?handle=${encodeURIComponent(handle)}`
                 : `${baseUrl}/auditlog/v2/auditlogrecords` +
-                  `?category=audit.configuration` +
-                  `&time_from=${encodeURIComponent(timeFrom)}` +
-                  `&time_to=${encodeURIComponent(timeTo)}`;
+                `?category=audit.configuration` +
+                `&time_from=${encodeURIComponent(timeFrom)}` +
+                `&time_to=${encodeURIComponent(timeTo)}`;
 
             const start = Date.now();
 
@@ -85,8 +85,12 @@ async function fetchRoleLogs(baseUrl, token, timeFrom, timeTo) {
                 headers: {
                     Authorization: `Bearer ${token}`
                 },
-                timeout: 30000
+                timeout: 300000
             });
+
+            if (response.status === 204) {
+                break;
+            }
 
             const duration = Date.now() - start;
 

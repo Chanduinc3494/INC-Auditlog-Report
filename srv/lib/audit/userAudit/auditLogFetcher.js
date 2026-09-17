@@ -174,7 +174,7 @@ async function fetchAllAuditLogPages(
                         Authorization:
                             `Bearer ${authorizationToken}`
                     },
-                    timeout: 120000
+                    timeout: 300000
                 }
             );
 

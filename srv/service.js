@@ -43,7 +43,11 @@ const {
     deduplicateUserAuditEntries,
     consolidateUserPersonaRecords
 } = require("./lib/audit/userAudit/userAuditfns");
-const {fetchIdentityUsers} = require("./lib/api/identity/identityProviderApi");
+const { fetchIdentityUsers } = require("./lib/api/identity/identityProviderApi");
+
+//jobs
+const xsenv = require("@sap/xsenv");
+const axios = require("axios");
 module.exports = cds.service.impl(async function () {
     const db = await cds.connect.to("db");
     const {
@@ -334,8 +338,9 @@ module.exports = cds.service.impl(async function () {
     //================ Sync Role Logs==================
     this.on("syncRoleLogs", async () => {
         // three month in case of last sync time is empty or null : currently 1 August 2026
-        const threeMonthAgo = new Date();
-        threeMonthAgo.setMonth(threeMonthAgo.getMonth() - 3);
+        const threeMonthAgo = new Date(
+            Date.now() - 90 * 24 * 60 * 60 * 1000
+        ).toISOString();
         try {
             // sync status
             const lockResult = await acquireSyncLock({
@@ -497,8 +502,9 @@ module.exports = cds.service.impl(async function () {
     //========= CONFIGURATION REPORT===================
     this.on("syncConfigurationAuditLogs", async () => {
         try {
-            const threeMonthAgo = new Date();
-            threeMonthAgo.setMonth(threeMonthAgo.getMonth() - 3);
+            const threeMonthAgo = new Date(
+                Date.now() - 90 * 24 * 60 * 60 * 1000
+            ).toISOString();
 
             //Sync status
             const lockResult = await acquireSyncLock({
@@ -908,7 +914,9 @@ module.exports = cds.service.impl(async function () {
     });
     // ====================== user report sync ======================
     this.on("syncUserAuditLogs", async () => {
-
+        const threeMonthsAgo = new Date(
+    Date.now() - 90 * 24 * 60 * 60 * 1000
+).toISOString();
         // the sync status
         const lockResult = await acquireSyncLock({
             reportName: "USER_AUDIT",
@@ -1040,7 +1048,7 @@ module.exports = cds.service.impl(async function () {
             // ============================================================
             const timeFrom = syncStatus?.lastSyncAt
                 ? formatAuditTimestamp(syncStatus.lastSyncAt)
-                : formatAuditTimestamp("2026-08-01T00:00:00Z");
+                : formatAuditTimestamp(threeMonthsAgo);
 
             const timeTo = formatAuditTimestamp(new Date());
 
@@ -1474,24 +1482,98 @@ module.exports = cds.service.impl(async function () {
         }
     });
 
+    // ===== Shared helper: handles ack + background execution + status callback =====
+    async function runAsyncJob(req, self, eventName, payload = {}) {
+        const jobId = req.headers["x-sap-job-id"];
+        const scheduleId = req.headers["x-sap-job-schedule-id"];
+        const runId = req.headers["x-sap-job-run-id"];
+        const schedulerHost = req.headers["x-sap-scheduler-host"];
 
+        // Ack immediately so the scheduler doesn't hit the 15s sync timeout
+        req.res.status(202).send();
+
+        // Run the actual work in the background, then report status
+        (async () => {
+            try {
+                const result = await self.send(eventName, payload);
+
+                let jobMessage = result?.message || `${eventName} completed successfully`;
+
+                // Add actual failure details to Job Scheduler message
+                if (result?.failures?.length > 0) {
+                    const failureDetails = result.failures
+                        .map(failure => {
+                            return `${failure.subaccountId}: ${failure.error}`;
+                        })
+                        .join("; ");
+
+                    jobMessage += ` Errors: ${failureDetails}`;
+                }
+
+                await updateJobRunStatus({
+                    jobId,
+                    scheduleId,
+                    runId,
+                    schedulerHost,
+                    success: result?.status === "SUCCESS",
+                    message: jobMessage
+                });
+
+            } catch (err) {
+                console.error(`${eventName} failed:`, err);
+
+                await updateJobRunStatus({
+                    jobId,
+                    scheduleId,
+                    runId,
+                    schedulerHost,
+                    success: false,
+                    message: err.message || `${eventName} failed`
+                });
+            }
+        })();
+    }
+
+    async function updateJobRunStatus({ jobId, scheduleId, runId, schedulerHost, success, message }) {
+        if (!jobId || !scheduleId || !runId || !schedulerHost) {
+            console.warn("Missing job identifiers or scheduler host — cannot report status back");
+            return;
+        }
+
+        const { jobscheduler } = xsenv.getServices({
+            jobscheduler: { label: "jobscheduler" }
+        });
+
+        const tokenResp = await axios.post(
+            `${jobscheduler.uaa.url}/oauth/token`,
+            new URLSearchParams({ grant_type: "client_credentials" }),
+            {
+                auth: {
+                    username: jobscheduler.uaa.clientid,
+                    password: jobscheduler.uaa.clientsecret
+                },
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            }
+        );
+        const accessToken = tokenResp.data.access_token;
+
+        const url = `${schedulerHost}/scheduler/jobs/${jobId}/schedules/${scheduleId}/runs/${runId}`;
+
+        await axios.put(
+            url,
+            { success, message },
+            { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+    }
 
     //===========Job action to Sync Role logs========
-    this.on("scheduledSyncRoleLogs", async (req) => {
-        return await this.send("syncRoleLogs", {});
-    });
+    this.on("scheduledSyncRoleLogs", (req) => runAsyncJob(req, this, "syncRoleLogs"));
     //================Job action to Sync Service Logs========
-    this.on("scheduledSyncServiceLogs", async (req) => {
-        return await this.send("syncServiceLogs", {});
-    });
+    this.on("scheduledSyncServiceLogs", (req) => runAsyncJob(req, this, "syncServiceLogs"));
     //===============Job action to Sync Config logs======
-    this.on("scheduledSyncConfigurationLogs", async (req) => {
-        return await this.send("syncConfigurationAuditLogs", {});
-    });
+    this.on("scheduledSyncConfigurationLogs", (req) => runAsyncJob(req, this, "syncConfigurationAuditLogs"));
     //===============Job action to Sync User logs=========
-    this.on("scheduledSyncUserLogs", async (req) => {
-        return await this.send("syncUserAuditLogs", {});
-    });
+    this.on("scheduledSyncUserLogs", (req) => runAsyncJob(req, this, "syncUserAuditLogs"));
 
     //=============Get Service report Status=========
     this.on("getServiceAuditStatus", async () => {
@@ -1560,7 +1642,7 @@ module.exports = cds.service.impl(async function () {
     //==================================Delete data entirely from the record (only Development , removed from the production)===============
 
     this.on("clearEntitlements", async (req) => {
-        await DELETE.from(ServiceAuditReport); // report name
+        await DELETE.from(ConfigurationReport); // report name
         return {
             status: "SUCCESS",
             message: "All Service Audit records deleted successfully."

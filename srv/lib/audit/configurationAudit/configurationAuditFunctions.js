@@ -68,7 +68,7 @@ async function fetchConfigurationAuditLogs(
                             "application/json"
                     },
 
-                    timeout: 30000
+                    timeout: 300000
                 }
             );
             // No record

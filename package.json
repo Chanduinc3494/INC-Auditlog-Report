@@ -4,6 +4,7 @@
   "dependencies": {
     "@cap-js/hana": "^2.7.0",
     "@sap/cds": "^9.8.5",
+    "@sap/xsenv": "^6.2.2",
     "@sap/xssec": "^4",
     "axios": "^1.19.0"
   },
