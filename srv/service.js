@@ -45,7 +45,7 @@ const {
     consolidateUserPersonaRecords
 } = require("./lib/audit/userAudit/userAuditfns");
 const { fetchIdentityUsers } = require("./lib/api/identity/identityProviderApi");
-const { getAuditTimeChunks } = require("./lib/helper/ChunkCalculation");
+
 //jobs
 const xsenv = require("@sap/xsenv");
 const axios = require("axios");
@@ -1039,8 +1039,9 @@ module.exports = cds.service.impl(async function () {
         const syncStatusId = syncStatus.ID;
 
         try {
-            let failedConnections = [];
+            const failedConnections = [];
 
+            // Fetch active Audit Log connections
             const connections = await SELECT
                 .from(BTPConnection)
                 .where({
@@ -1072,6 +1073,7 @@ module.exports = cds.service.impl(async function () {
                 )
             ];
 
+            // Get ACCOUNTS connection
             const accountsConnection = await SELECT.one
                 .from(BTPConnection)
                 .where({
@@ -1079,7 +1081,7 @@ module.exports = cds.service.impl(async function () {
                     active: true
                 });
 
-            let subaccountMap = new Map();
+            const subaccountMap = new Map();
 
             for (const subaccountId of subaccountIds) {
                 subaccountMap.set(subaccountId, subaccountId);
@@ -1127,158 +1129,150 @@ module.exports = cds.service.impl(async function () {
                 }
             }
 
-            const timeFrom = syncStatus?.lastSyncAt
-                ? formatAuditTimestamp(syncStatus.lastSyncAt)
-                : formatAuditTimestamp(threeMonthsAgo);
+            const syncStart = syncStatus?.lastSyncAt
+                ? new Date(syncStatus.lastSyncAt)
+                : new Date(threeMonthsAgo);
 
-            const timeTo = formatAuditTimestamp(new Date());
+            const syncEnd = new Date();
+            let chunkFrom = new Date(syncStart);
+            let totalProcessedRecords = 0;
 
-            // Split the sync range into 8-day chunks.
-            const auditChunks = getAuditTimeChunks(
-                timeFrom,
-                timeTo
-            );
+            // Process the sync window in 8-day chunks
+            while (chunkFrom < syncEnd) {
+                const chunkTo = new Date(chunkFrom);
+                chunkTo.setDate(chunkTo.getDate() + 8);
 
-            console.log(
-                `[USER AUDIT] Sync range: ${timeFrom} -> ${timeTo} | ` +
-                `Chunks: ${auditChunks.length}`
-            );
-
-            const entries = [];
-
-            for (const connection of connections) {
-                const cleanSubaccountId =
-                    connection.subaccountId?.trim();
-
-                const subaccountName =
-                    subaccountMap.get(cleanSubaccountId) ||
-                    cleanSubaccountId;
-
-                let instanceMap = new Map();
-
-                try {
-                    instanceMap =
-                        await fetchInstanceMapForSubaccount(
-                            BTPConnection,
-                            cleanSubaccountId,
-                            failedConnections,
-                            fetchServiceInstances,
-                            buildInstanceMap,
-                            oAuthManager
-                        );
-
-                    console.log(
-                        `[USER AUDIT] Instance map loaded for ${cleanSubaccountId}. ` +
-                        `Entries: ${instanceMap.size}`
-                    );
-                } catch (instErr) {
-                    console.warn(
-                        `[USER AUDIT] Could not resolve service instances for ${cleanSubaccountId}:`,
-                        instErr.message
-                    );
-
-                    failedConnections.push({
-                        api: "SERVICE_MANAGER",
-                        operation: "GET_SERVICE_INSTANCES",
-                        subaccountId: cleanSubaccountId,
-                        error: instErr.message
-                    });
+                if (chunkTo > syncEnd) {
+                    chunkTo.setTime(syncEnd.getTime());
                 }
 
-                let userMap = new Map();
+                const timeFrom =
+                    formatAuditTimestamp(chunkFrom);
 
-                try {
-                    const userConnection = await SELECT.one
-                        .from(BTPConnection)
-                        .where({
-                            subaccountId: cleanSubaccountId,
-                            serviceType: "XSUAA",
-                            active: true
-                        });
+                const timeTo =
+                    formatAuditTimestamp(chunkTo);
 
-                    if (!userConnection) {
-                        throw new Error(
-                            `XSUAA connection not found for subaccount ${cleanSubaccountId}`
-                        );
-                    }
+                const entries = [];
 
-                    const userToken =
-                        await oAuthManager.getToken(userConnection);
+                console.log(
+                    `[USER AUDIT] Processing chunk: ${timeFrom} -> ${timeTo}`
+                );
 
-                    if (!userToken) {
-                        throw new Error(
-                            "XSUAA OAuth token was not returned."
-                        );
-                    }
+                // Process each Audit Log connection
+                for (const connection of connections) {
+                    const cleanSubaccountId =
+                        connection.subaccountId?.trim();
 
-                    const {
-                        userMapping,
-                        failures: identityFailures
-                    } = await fetchIdentityUsers(
-                        userConnection.apiBaseUrl,
-                        userToken
-                    );
+                    const subaccountName =
+                        subaccountMap.get(cleanSubaccountId) ||
+                        cleanSubaccountId;
 
-                    userMap = userMapping;
+                    let instanceMap = new Map();
 
-                    failedConnections.push(
-                        ...(identityFailures || [])
-                    );
-                } catch (err) {
-                    failedConnections.push({
-                        api: "IDENTITY_USERS",
-                        operation: "GET_IDENTITY_USERS",
-                        subaccountId: cleanSubaccountId,
-                        error: err.message
-                    });
-
-                    console.warn(
-                        `[USER AUDIT] Could not fetch XSUAA users for ${cleanSubaccountId}:`,
-                        err.message
-                    );
-                }
-
-                try {
-                    const token =
-                        await oAuthManager.getToken(connection);
-
-                    if (!token) {
-                        throw new Error(
-                            "Audit Log OAuth token was not returned."
-                        );
-                    }
-
-                    const connectionEntries = [];
-
-                    // Each 8-day chunk still uses API handle pagination internally.
-                    for (
-                        let chunkIndex = 0;
-                        chunkIndex < auditChunks.length;
-                        chunkIndex++
-                    ) {
-                        const {
-                            timeFrom: chunkTimeFrom,
-                            timeTo: chunkTimeTo
-                        } = auditChunks[chunkIndex];
+                    try {
+                        instanceMap =
+                            await fetchInstanceMapForSubaccount(
+                                BTPConnection,
+                                cleanSubaccountId,
+                                failedConnections,
+                                fetchServiceInstances,
+                                buildInstanceMap,
+                                oAuthManager
+                            );
 
                         console.log(
-                            `[USER AUDIT] ${cleanSubaccountId} | ` +
-                            `Chunk ${chunkIndex + 1}/${auditChunks.length} | ` +
-                            `${chunkTimeFrom} -> ${chunkTimeTo}`
+                            `[USER AUDIT] Instance map loaded for ${cleanSubaccountId}. ` +
+                            `Entries: ${instanceMap.size}`
                         );
+                    } catch (instErr) {
+                        console.warn(
+                            `[USER AUDIT] Could not resolve service instances for ${cleanSubaccountId}:`,
+                            instErr.message
+                        );
+
+                        failedConnections.push({
+                            api: "SERVICE_MANAGER",
+                            operation: "GET_SERVICE_INSTANCES",
+                            subaccountId: cleanSubaccountId,
+                            error: instErr.message
+                        });
+                    }
+
+                    let userMap = new Map();
+
+                    try {
+                        const userConnection = await SELECT.one
+                            .from(BTPConnection)
+                            .where({
+                                subaccountId: cleanSubaccountId,
+                                serviceType: "XSUAA",
+                                active: true
+                            });
+
+                        if (!userConnection) {
+                            throw new Error(
+                                `XSUAA connection not found for subaccount ${cleanSubaccountId}`
+                            );
+                        }
+
+                        const userToken =
+                            await oAuthManager.getToken(userConnection);
+
+                        if (!userToken) {
+                            throw new Error(
+                                "XSUAA OAuth token was not returned."
+                            );
+                        }
+
+                        const {
+                            userMapping,
+                            failures: identityFailures
+                        } = await fetchIdentityUsers(
+                            userConnection.apiBaseUrl,
+                            userToken
+                        );
+
+                        userMap = userMapping;
+
+                        failedConnections.push(
+                            ...(identityFailures || [])
+                        );
+                    } catch (err) {
+                        failedConnections.push({
+                            api: "IDENTITY_USERS",
+                            operation: "GET_IDENTITY_USERS",
+                            subaccountId: cleanSubaccountId,
+                            error: err.message
+                        });
+
+                        console.warn(
+                            `[USER AUDIT] Could not fetch XSUAA users for ${cleanSubaccountId}:`,
+                            err.message
+                        );
+                    }
+
+                    try {
+                        const token =
+                            await oAuthManager.getToken(connection);
+
+                        if (!token) {
+                            throw new Error(
+                                "Audit Log OAuth token was not returned."
+                            );
+                        }
 
                         const configEntries =
                             await fetchUserConfigLogs(
                                 connection,
                                 token,
-                                chunkTimeFrom,
-                                chunkTimeTo,
+                                timeFrom,
+                                timeTo,
                                 userMap,
                                 subaccountName,
                                 instanceMap
                             );
 
-                        connectionEntries.push(
+                        entries.push(
                             ...(configEntries || [])
                         );
 
@@ -1286,139 +1280,144 @@ module.exports = cds.service.impl(async function () {
                             await fetchUserAuditLogs(
                                 connection,
                                 token,
-                                chunkTimeFrom,
-                                chunkTimeTo,
+                                timeFrom,
+                                timeTo,
                                 subaccountName,
                                 instanceMap
                             );
 
-                        connectionEntries.push(
+                        entries.push(
                             ...(securityEntries || [])
                         );
 
                         console.log(
                             `[USER AUDIT] ${cleanSubaccountId} | ` +
-                            `Chunk ${chunkIndex + 1}/${auditChunks.length} completed | ` +
                             `Config: ${configEntries?.length || 0} | ` +
                             `Security: ${securityEntries?.length || 0}`
                         );
+                    } catch (connectionError) {
+                        failedConnections.push({
+                            api: "AUDIT_LOG",
+                            operation: "GET_USER_AUDIT_LOGS",
+                            subaccountId: cleanSubaccountId,
+                            error: connectionError.message
+                        });
+
+                        console.error(
+                            `[USER AUDIT] Failed processing subaccount ${cleanSubaccountId}:`,
+                            connectionError.message
+                        );
+
+                        throw new Error(
+                            `User Audit failed for subaccount ${cleanSubaccountId}: ${connectionError.message}`
+                        );
                     }
-
-                    for (const entry of connectionEntries) {
-                        const userId = entry.userId?.trim();
-                        const normalizedUserId = userId?.toLowerCase();
-
-                        if (
-                            !normalizedUserId ||
-                            normalizedUserId === "anonymous" ||
-                            normalizedUserId === "unknown_user" ||
-                            normalizedUserId.includes("cn=com.sap.ca.ids")
-                        ) {
-                            continue;
-                        }
-
-                        entry.subaccount = subaccountName;
-                        entry.ID = entry.ID || cds.utils.uuid();
-
-                        entries.push(entry);
-                    }
-                } catch (connectionError) {
-                    failedConnections.push({
-                        api: "AUDIT_LOG",
-                        operation: "GET_USER_AUDIT_LOGS",
-                        subaccountId: cleanSubaccountId,
-                        error: connectionError.message
-                    });
-
-                    console.error(
-                        `[USER AUDIT] Failed processing subaccount ${cleanSubaccountId}:`,
-                        connectionError.message
-                    );
-
-                    continue;
                 }
-            }
 
-            const finalSyncStatus =
-                failedConnections.length > 0
-                    ? "PARTIAL_SUCCESS"
-                    : "SUCCESS";
+                // Remove invalid user records from the current chunk
+                const validEntries = entries.filter(entry => {
+                    const userId = entry.userId?.trim();
+                    const normalizedUserId =
+                        userId?.toLowerCase();
 
-            if (!entries || entries.length === 0) {
-                const message =
-                    failedConnections.length > 0
-                        ? `Synchronization completed with ${failedConnections.length} failure(s). No new User Audit records were processed.`
-                        : "Synchronization completed. No new User Audit records found.";
-
-                await UPSERT.into(ReportSyncStatus).entries({
-                    reportName: "USER_AUDIT",
-                    lastRunAt: timeTo,
-                    lastSyncStatus: finalSyncStatus,
-                    isRunning: false,
-                    runningSince: null,
-                    ID: syncStatusId,
-                    message
+                    return (
+                        normalizedUserId &&
+                        normalizedUserId !== "anonymous" &&
+                        normalizedUserId !== "unknown_user" &&
+                        !normalizedUserId.includes(
+                            "cn=com.sap.ca.ids"
+                        )
+                    );
                 });
 
-                return {
-                    status: finalSyncStatus,
-                    message,
-                    processedRecords: 0,
-                    failures: failedConnections
-                };
-            }
+                // Deduplicate and consolidate the current chunk
+                const deduplicatedEntries =
+                    deduplicateUserAuditEntries(
+                        validEntries
+                    );
 
-            const deduplicatedEntries =
-                deduplicateUserAuditEntries(entries);
+                const processedEntries =
+                    consolidateUserPersonaRecords(
+                        deduplicatedEntries
+                    );
 
-            const processedEntries =
-                consolidateUserPersonaRecords(
-                    deduplicatedEntries
+                let processedRecords = 0;
+
+                // Upsert the completed chunk
+                if (processedEntries.length > 0) {
+                    const BATCH_SIZE = 500;
+
+                    for (
+                        let i = 0;
+                        i < processedEntries.length;
+                        i += BATCH_SIZE
+                    ) {
+                        const rawBatch =
+                            processedEntries.slice(
+                                i,
+                                i + BATCH_SIZE
+                            );
+
+                        const batch = rawBatch.map(item => ({
+                            ...item,
+                            ID: item.ID || cds.utils.uuid()
+                        }));
+
+                        console.log(
+                            `Upserting User Audit batch ` +
+                            `${Math.floor(i / BATCH_SIZE) + 1} ` +
+                            `(${batch.length} records)...`
+                        );
+
+                        await cds.tx(async tx => {
+                            await tx.run(
+                                UPSERT
+                                    .into(UserAuditReport)
+                                    .entries(batch)
+                            );
+                        });
+
+                        processedRecords += batch.length;
+
+                        console.log(
+                            `User Audit batch upserted successfully. ` +
+                            `Total processed: ${processedRecords}/${processedEntries.length}`
+                        );
+                    }
+                }
+
+                totalProcessedRecords += processedRecords;
+
+                // Save progress after each successful chunk
+                await cds.tx(async tx => {
+                    await tx.run(
+                        UPDATE(ReportSyncStatus)
+                            .set({
+                                lastSyncAt: timeTo,
+                                lastRunAt: timeTo,
+                                lastSyncStatus: "SUCCESS",
+                                isRunning: true,
+                                runningSince:
+                                    syncStatus.runningSince,
+                                message:
+                                    `User Audit synchronization progress: ${totalProcessedRecords} records processed.`
+                            })
+                            .where({
+                                ID: syncStatusId
+                            })
+                    );
+                });
+
+                console.log(
+                    `[USER AUDIT] Chunk completed: ${timeFrom} -> ${timeTo} | ` +
+                    `Records: ${processedRecords}`
                 );
 
-            let processedRecords = 0;
-
-            if (processedEntries.length > 0) {
-                const BATCH_SIZE = 500;
-
-                for (
-                    let i = 0;
-                    i < processedEntries.length;
-                    i += BATCH_SIZE
-                ) {
-                    const rawBatch =
-                        processedEntries.slice(
-                            i,
-                            i + BATCH_SIZE
-                        );
-
-                    const batch = rawBatch.map(item => ({
-                        ...item,
-                        ID: item.ID || cds.utils.uuid()
-                    }));
-
-                    console.log(
-                        `Upserting User Audit batch ` +
-                        `${Math.floor(i / BATCH_SIZE) + 1} ` +
-                        `(${batch.length} records)...`
-                    );
-
-                    await cds.tx(async tx => {
-                        await tx.run(
-                            UPSERT
-                                .into(UserAuditReport)
-                                .entries(batch)
-                        );
-                    });
-
-                    processedRecords += batch.length;
-
-                    console.log(
-                        `User Audit batch upserted successfully. ` +
-                        `Total processed: ${processedRecords}/${processedEntries.length}`
-                    );
-                }
+                chunkFrom = new Date(chunkTo);
             }
+
+            const finalTime =
+                formatAuditTimestamp(syncEnd);
 
             const syncResult =
                 failedConnections.length > 0
@@ -1427,22 +1426,23 @@ module.exports = cds.service.impl(async function () {
 
             const syncMessage =
                 `Synchronization completed. ` +
-                `${processedRecords} User Audit records processed.` +
+                `${totalProcessedRecords} User Audit records processed.` +
                 (
                     failedConnections.length > 0
                         ? ` ${failedConnections.length} API failure(s) detected.`
                         : ""
                 );
 
+            // Mark the complete synchronization status
             await cds.tx(async tx => {
                 await tx.run(
                     UPDATE(ReportSyncStatus)
                         .set({
                             lastSyncAt:
                                 syncResult === "SUCCESS"
-                                    ? timeTo
+                                    ? finalTime
                                     : syncStatus.lastSyncAt,
-                            lastRunAt: timeTo,
+                            lastRunAt: finalTime,
                             lastSyncStatus: syncResult,
                             isRunning: false,
                             runningSince: null,
@@ -1457,16 +1457,16 @@ module.exports = cds.service.impl(async function () {
             return {
                 status: syncResult,
                 message: syncMessage,
-                processedRecords,
+                processedRecords: totalProcessedRecords,
                 failures: failedConnections
             };
-
         } catch (err) {
             console.error(
                 "User Audit Log synchronization failed:",
                 err
             );
 
+            // Mark synchronization as failed
             await cds.tx(async tx => {
                 await tx.run(
                     UPDATE(ReportSyncStatus)

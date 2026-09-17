@@ -126,14 +126,7 @@ function resolveTechnicalUser(
         return null;
     }
 
-    console.log(
-        "[USER AUDIT] Technical user detected."
-    );
-
-    console.log(
-        "[USER AUDIT] Raw service user:",
-        originalUserId
-    );
+   
 
     if (originalUserId.includes("|")) {
         const parts = originalUserId
@@ -151,10 +144,7 @@ function resolveTechnicalUser(
                     .trim();
 
             if (instanceName) {
-                console.log(
-                    "[USER AUDIT] Service instance resolved from pipe format:",
-                    instanceName
-                );
+               
 
                 return truncate(
                     instanceName,
@@ -171,10 +161,7 @@ function resolveTechnicalUser(
                 .trim();
 
         if (instanceName) {
-            console.log(
-                "[USER AUDIT] Service instance resolved from simple format:",
-                instanceName
-            );
+            
 
             return truncate(
                 instanceName,
@@ -194,10 +181,7 @@ function resolveTechnicalUser(
                 .replace(/-/g, "")
                 .toLowerCase();
 
-        console.log(
-            "[USER AUDIT] Normalized clone instance ID:",
-            cloneInstanceId
-        );
+       
 
         if (instanceMap) {
 
@@ -227,10 +211,7 @@ function resolveTechnicalUser(
                         );
 
                     if (instanceName) {
-                        console.log(
-                            "[USER AUDIT] Resolved technical identity from map:",
-                            instanceName
-                        );
+                       
 
                         return truncate(
                             instanceName,
@@ -274,10 +255,7 @@ function resolveTechnicalUser(
                             );
 
                         if (instanceName) {
-                            console.log(
-                                "[USER AUDIT] Resolved technical identity from normalized map:",
-                                instanceName
-                            );
+                          
 
                             return truncate(
                                 instanceName,
@@ -314,10 +292,7 @@ function resolveTechnicalUser(
                         );
 
                     if (instanceName) {
-                        console.log(
-                            "[USER AUDIT] Resolved technical identity from object map:",
-                            instanceName
-                        );
+                       
 
                         return truncate(
                             instanceName,
@@ -343,10 +318,7 @@ function resolveTechnicalUser(
                             );
 
                         if (instanceName) {
-                            console.log(
-                                "[USER AUDIT] Resolved technical identity from normalized object map:",
-                                instanceName
-                            );
+                           
 
                             return truncate(
                                 instanceName,
@@ -364,10 +336,7 @@ function resolveTechnicalUser(
             .trim();
 
     if (fallbackName) {
-        console.log(
-            "[USER AUDIT] Using technical user fallback:",
-            fallbackName
-        );
+       
 
         return truncate(
             fallbackName,
