@@ -280,7 +280,7 @@ function processUserConfigLog(
         obj.tableName === "users" &&
         obj.crudType === "UPDATE"
     ) {
-        console.log("user update logs",log);
+        
         let oldUser = {};
         let newUser = {};
         if (completeAttribute?.old) {

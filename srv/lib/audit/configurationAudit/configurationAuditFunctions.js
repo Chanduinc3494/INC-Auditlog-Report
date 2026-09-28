@@ -51,13 +51,13 @@ async function fetchConfigurationAuditLogs(
 
             const url = handle
                 ? `${normalizedBaseUrl}` +
-                  `/auditlog/v2/auditlogrecords` +
-                  `?handle=${encodeURIComponent(handle)}`
+                `/auditlog/v2/auditlogrecords` +
+                `?handle=${encodeURIComponent(handle)}`
                 : `${normalizedBaseUrl}` +
-                  `/auditlog/v2/auditlogrecords` +
-                  `?category=audit.configuration` +
-                  `&time_from=${encodeURIComponent(timeFrom)}` +
-                  `&time_to=${encodeURIComponent(timeTo)}`;
+                `/auditlog/v2/auditlogrecords` +
+                `?category=audit.configuration` +
+                `&time_from=${encodeURIComponent(timeFrom)}` +
+                `&time_to=${encodeURIComponent(timeTo)}`;
 
             console.log(
                 `[AUDIT CONFIGURATION] Loading Page ${page}...`
@@ -1352,6 +1352,8 @@ function getIdentityProviderChanges(attr) {
         return {
             trustName:
                 normalizeString(
+                    newValue.config?.providerDescription ||
+                    oldValue.config?.providerDescription ||
                     newValue?.name ||
                     oldValue?.name
                 ),
@@ -1473,8 +1475,11 @@ function getIdentityProviderChanges(attr) {
     return {
         trustName:
             normalizeString(
+                newValue.config?.providerDescription ||
+                oldValue.config?.providerDescription ||
                 newValue.name ||
                 oldValue.name
+
             ),
 
         domain:
@@ -1943,7 +1948,7 @@ function mapGenericSubaccountSettings(
  * Returns an ARRAY because one raw message can contain
  * multiple logical records.
  */
-function mapConfigurationAuditLog(log, identityProviderMap, userMap,instanceMap) {
+function mapConfigurationAuditLog(log, identityProviderMap, userMap, instanceMap) {
     if (!log) {
         return [];
     }

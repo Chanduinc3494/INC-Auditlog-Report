@@ -82,20 +82,11 @@ async function fetchServiceBindingAndKeyAuditLogs(
 
     try {
 
-        console.log(
-            "[CF AUDIT] Base URL:",
-            baseUrl
-        );
-
-        console.log(
-            "[CF AUDIT] Time From:",
-            cfTimeFrom
-        );
-
-        console.log(
-            "[CF AUDIT] Time To:",
-            cfTimeTo
-        );
+       
+        
+      
+       
+        
 
 
         for (
@@ -103,9 +94,8 @@ async function fetchServiceBindingAndKeyAuditLogs(
             of trackedTypes
         ) {
 
-            console.log(
-                `[CF AUDIT] Fetching: ${eventType}`
-            );
+           
+            
 
 
             let nextUrl = url;
@@ -165,10 +155,8 @@ async function fetchServiceBindingAndKeyAuditLogs(
                         : [];
 
 
-                console.log(
-                    `[CF AUDIT] ${eventType}: ` +
-                    `${resources.length} events`
-                );
+              
+                        
 
 
                 allEvents.push(

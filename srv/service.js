@@ -743,7 +743,7 @@ module.exports = cds.service.impl(async function () {
                             failedConnections,
                             SELECT
                         });
-
+                    
                     // Fetch user map
                     const userMap =
                         await fetchUserMapForSubaccount({
@@ -1363,11 +1363,7 @@ module.exports = cds.service.impl(async function () {
                             ID: item.ID || cds.utils.uuid()
                         }));
 
-                        console.log(
-                            `Upserting User Audit batch ` +
-                            `${Math.floor(i / BATCH_SIZE) + 1} ` +
-                            `(${batch.length} records)...`
-                        );
+                       
 
                         await cds.tx(async tx => {
                             await tx.run(
@@ -1596,14 +1592,7 @@ module.exports = cds.service.impl(async function () {
             return;
         }
 
-        console.log("Updating Job Scheduler run:", {
-            jobId,
-            scheduleId,
-            runId,
-            schedulerHost,
-            success,
-            message
-        });
+        
 
         const { jobscheduler } = xsenv.getServices({
             jobscheduler: { label: "jobscheduler" }
