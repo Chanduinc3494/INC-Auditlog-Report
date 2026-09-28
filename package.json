@@ -31,7 +31,19 @@
     "requires": {
       "[production]": {
         "auth": "xsuaa",
-        "db": "hana"
+        "db": {
+          "kind": "hana",
+          "pool": {
+            "min": 0,
+            "max": 50,
+            "acquireTimeoutMillis": 10000,
+            "idleTimeoutMillis": 60000,
+            "evictionRunIntervalMillis": 100000,
+            "numTestsPerEvictionRun": 10,
+            "testOnBorrow": true,
+            "fifo": false
+          }
+        }
       },
       "[hybrid]": {
         "auth": "mocked",

@@ -743,7 +743,7 @@ module.exports = cds.service.impl(async function () {
                             failedConnections,
                             SELECT
                         });
-                    
+
                     // Fetch user map
                     const userMap =
                         await fetchUserMapForSubaccount({
@@ -1363,7 +1363,7 @@ module.exports = cds.service.impl(async function () {
                             ID: item.ID || cds.utils.uuid()
                         }));
 
-                       
+
 
                         await cds.tx(async tx => {
                             await tx.run(
@@ -1485,90 +1485,107 @@ module.exports = cds.service.impl(async function () {
     });
     // ===== Shared helper: handles ack + background execution + status callback =====
     async function runAsyncJob(req, self, eventName, payload = {}) {
-        const jobId = req.headers["x-sap-job-id"];
-        const scheduleId = req.headers["x-sap-job-schedule-id"];
-        const runId = req.headers["x-sap-job-run-id"];
-        const schedulerHost = req.headers["x-sap-scheduler-host"];
+        const {
+            "x-sap-job-id": jobId,
+            "x-sap-job-schedule-id": scheduleId,
+            "x-sap-job-run-id": runId,
+            "x-sap-scheduler-host": schedulerHost
+        } = req.headers;
+
+        const tenant = req.tenant;
 
         console.log(`[${eventName}] Job started`, {
             jobId,
             scheduleId,
             runId,
-            schedulerHost
+            tenant
         });
 
-        // ACK immediately
+        // ACK Job Scheduler immediately
         req.res.status(202).send();
 
         console.log(`[${eventName}] 202 ACK sent`);
 
-        (async () => {
-            try {
-                console.log(`[${eventName}] Starting background execution`);
+        cds.spawn(
+            {
+                user: cds.User.privileged,
+                tenant
+            },
+            async () => {
 
-                const result = await self.send(eventName, payload);
-
-                console.log(`[${eventName}] Background execution completed`, {
-                    status: result?.status,
-                    message: result?.message,
-                    failures: result?.failures?.length
-                });
-
-                let jobMessage =
-                    result?.message ||
-                    `${eventName} completed successfully`;
-
-                if (result?.failures?.length > 0) {
-                    const failureDetails = result.failures
-                        .map(failure =>
-                            `${failure.subaccountId}: ${failure.error}`
-                        )
-                        .join("; ");
-
-                    jobMessage += ` Errors: ${failureDetails}`;
-                }
-
-                console.log(`[${eventName}] Updating Job Scheduler status`, {
-                    success: result?.status === "SUCCESS",
-                    message: jobMessage
-                });
-
-                await updateJobRunStatus({
-                    jobId,
-                    scheduleId,
-                    runId,
-                    schedulerHost,
-                    success: result?.status === "SUCCESS",
-                    message: jobMessage
-                });
-
-                console.log(`[${eventName}] Job Scheduler status updated successfully`);
-
-            } catch (err) {
-                console.error(`[${eventName}] Background execution failed`, err);
+                let success = false;
+                let message;
 
                 try {
-                    await updateJobRunStatus({
-                        jobId,
-                        scheduleId,
-                        runId,
-                        schedulerHost,
-                        success: false,
-                        message: err.message || `${eventName} failed`
-                    });
 
                     console.log(
-                        `[${eventName}] Failure status reported to Job Scheduler`
+                        `[${eventName}] Background execution started`
                     );
 
-                } catch (statusErr) {
-                    console.error(
-                        `[${eventName}] FAILED TO REPORT STATUS TO JOB SCHEDULER`,
-                        statusErr.response?.data || statusErr.message
+                    const result = await self.send(
+                        eventName,
+                        payload
                     );
+
+                    success = result?.status === "SUCCESS";
+
+                    message =
+                        result?.message ||
+                        `${eventName} completed`;
+
+                    if (result?.failures?.length) {
+                        message +=
+                            " Errors: " +
+                            result.failures
+                                .map(
+                                    f =>
+                                        `${f.subaccountId}: ${f.error}`
+                                )
+                                .join("; ");
+                    }
+
+                    console.log(
+                        `[${eventName}] Background execution completed`,
+                        {
+                            success,
+                            message
+                        }
+                    );
+
+                } catch (err) {
+
+                    console.error(
+                        `[${eventName}] Background execution failed`,
+                        err
+                    );
+
+                    message =
+                        err.message ||
+                        `${eventName} failed`;
+
+                } finally {
+
+                    try {
+
+                        await updateJobRunStatus({
+                            jobId,
+                            scheduleId,
+                            runId,
+                            schedulerHost,
+                            success,
+                            message
+                        });
+
+                    } catch (e) {
+
+                        console.error(
+                            `[${eventName}] Could not report status`,
+                            e.response?.data || e.message
+                        );
+                    }
                 }
             }
-        })();
+        );
     }
 
     async function updateJobRunStatus({
@@ -1592,7 +1609,7 @@ module.exports = cds.service.impl(async function () {
             return;
         }
 
-        
+
 
         const { jobscheduler } = xsenv.getServices({
             jobscheduler: { label: "jobscheduler" }
