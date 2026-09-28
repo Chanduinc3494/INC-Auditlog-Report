@@ -89,6 +89,18 @@ module.exports = cds.service.impl(async function () {
 
     // =====================service logs===========
     this.on("syncServiceLogs", async (req) => {
+        // Every DB operation in this long-running background job
+        // must use this helper so it gets its own short transaction.
+        const tenant = req.tenant;
+        const run = (query) =>
+            cds.tx(
+                {
+                    tenant,
+                    user: cds.User.privileged
+                },
+                tx => tx.run(query)
+            );
+
         const threeMonthsAgo = new Date(
             Date.now() - 90 * 24 * 60 * 60 * 1000
         ).toISOString();
@@ -96,9 +108,7 @@ module.exports = cds.service.impl(async function () {
         //sync status
         const lockResult = await acquireSyncLock({
             reportName: "SERVICE_AUDIT",
-            SELECT,
-            INSERT,
-            UPDATE,
+            run,
             ReportSyncStatus
         });
         if (!lockResult.acquired) {
@@ -124,12 +134,12 @@ module.exports = cds.service.impl(async function () {
 
         try {
 
-            const connections = await SELECT
+            const connections = await run(SELECT
                 .from(BTPConnection)
                 .where({
                     serviceType: "SERVICE_MANAGER",
                     active: true
-                }); // fetching all the subaccount with their credentails for the service type service manager 
+                })); // fetching all the subaccount with their credentails for the service type service manager 
 
             for (const connection of connections) {
                 const subaccountId = connection.subaccountId;
@@ -168,7 +178,7 @@ module.exports = cds.service.impl(async function () {
                         planMap.set(plan.id, plan);
                     }
                     // Fetch Users for Instance Creators
-                    const userMap = await fetchInstanceUsers(connection, instances, failedConnections, cfAuth, fetchUsers, BTPConnection, SELECT);
+                    const userMap = await fetchInstanceUsers(connection, instances, failedConnections, cfAuth, fetchUsers, BTPConnection, run);
 
                     const currentInstanceIds = new Set();
 
@@ -192,12 +202,12 @@ module.exports = cds.service.impl(async function () {
                         const creator = userMap.get(instance.created_by);
                         const createdBy = creator?.username || instance.created_by;
                         // checking if instance already exist in our report
-                        const existing = await SELECT.one
+                        const existing = await run(SELECT.one
                             .from(ServiceAuditReport)
                             .where({
                                 subaccountId: connection.subaccountId,
                                 serviceInstanceId: instance.id
-                            });
+                            }));
 
                         const entry = {
                             system: "SAP BTP",
@@ -215,36 +225,37 @@ module.exports = cds.service.impl(async function () {
 
                         if (!existing) {
                             // add in case it does not exist
-                            await INSERT
+                            await run(INSERT
                                 .into(ServiceAuditReport)
-                                .entries(entry);
+                                .entries(entry));
 
 
                         } else {
                             // update in case of exist
-                            await UPDATE(ServiceAuditReport)
+                            await run(UPDATE(ServiceAuditReport)
                                 .set(entry)
                                 .where({
                                     ID: existing.ID
-                                });
+                                }));
 
 
                         }
                     }
                     // delete the instances which is not there in current instances and older than 3 months
-                    const existingRecords = await SELECT.from(ServiceAuditReport).columns("ID", "serviceInstanceId", "createdOn").where({
+                    const existingRecords = await run(SELECT.from(ServiceAuditReport).columns("ID", "serviceInstanceId", "createdOn").where({
                         subaccountId: connection.subaccountId
-                    })
+                    }));
 
                     for (const record of existingRecords) {
                         const noLongerExists = !currentInstanceIds.has(record.serviceInstanceId);
 
                         if (noLongerExists) {
-                            await DELETE
+                            await run(DELETE
                                 .from(ServiceAuditReport)
                                 .where({
                                     ID: record.ID
-                                });
+                                })
+                            );
                         }
                     }
                 }
@@ -278,7 +289,7 @@ module.exports = cds.service.impl(async function () {
                     : syncStatus?.lastSyncAt;
 
             if (isFirstSync) {
-                await UPDATE(ReportSyncStatus)
+                await run(UPDATE(ReportSyncStatus)
                     .set({
                         lastSyncAt: finalLastSyncAt,
                         lastRunAt: new Date(),
@@ -290,10 +301,10 @@ module.exports = cds.service.impl(async function () {
                     })
                     .where({
                         reportName: "SERVICE_AUDIT"
-                    });
+                    }));
             }
             else {
-                await UPDATE(ReportSyncStatus)
+                await run(UPDATE(ReportSyncStatus)
                     .set({
                         lastSyncAt: finalLastSyncAt,
                         lastRunAt: new Date(),
@@ -304,7 +315,7 @@ module.exports = cds.service.impl(async function () {
                     })
                     .where({
                         reportName: "SERVICE_AUDIT"
-                    });
+                    }));
             }
 
 
@@ -320,7 +331,7 @@ module.exports = cds.service.impl(async function () {
 
             const errorMessage = getErrorMessage(err);
 
-            await UPDATE(ReportSyncStatus)
+            await run(UPDATE(ReportSyncStatus)
                 .set({
                     lastRunAt: new Date(),
                     lastSyncStatus: "FAILED",
@@ -330,7 +341,7 @@ module.exports = cds.service.impl(async function () {
                 })
                 .where({
                     reportName: "SERVICE_AUDIT"
-                });
+                }));
 
             throw new Error(errorMessage);
         }
@@ -338,7 +349,18 @@ module.exports = cds.service.impl(async function () {
     });
 
     //================ Sync Role Logs==================
-    this.on("syncRoleLogs", async () => {
+    this.on("syncRoleLogs", async (req) => {
+        // Every DB operation in this long-running background job
+        // must use this helper so it gets its own short transaction.
+        const tenant = req.tenant;
+        const run = (query) =>
+            cds.tx(
+                {
+                    tenant,
+                    user: cds.User.privileged
+                },
+                tx => tx.run(query)
+            );
         // three month in case of last sync time is empty or null : currently 1 August 2026
         const threeMonthAgo = new Date(
             Date.now() - 90 * 24 * 60 * 60 * 1000
@@ -348,9 +370,7 @@ module.exports = cds.service.impl(async function () {
             // sync status
             const lockResult = await acquireSyncLock({
                 reportName: "ROLE_AUDIT",
-                SELECT,
-                INSERT,
-                UPDATE,
+                run,
                 ReportSyncStatus
             });
 
@@ -368,20 +388,20 @@ module.exports = cds.service.impl(async function () {
             const failedConnections = [];
 
             // fetching subaccount credentials of type audit logs
-            const connections = await SELECT
+            const connections = await run(SELECT
                 .from(BTPConnection)
                 .where({
                     serviceType: "AUDIT_LOG",
                     active: true
-                });
+                }));
 
             // fetching credentials for subaccount
-            const accountsConnection = await SELECT.one
+            const accountsConnection = await run(SELECT.one
                 .from(BTPConnection)
                 .where({
                     serviceType: "ACCOUNTS",
                     active: true
-                });
+                }));
 
             // subaccount mapping
             const subaccountMap =
@@ -502,25 +522,32 @@ module.exports = cds.service.impl(async function () {
                 if (chunkEntries.length > 0) {
                     const BATCH_SIZE = 500;
 
-                    await cds.tx(async (tx) => {
-                        for (
-                            let i = 0;
-                            i < chunkEntries.length;
-                            i += BATCH_SIZE
-                        ) {
-                            const batch =
-                                chunkEntries.slice(
-                                    i,
-                                    i + BATCH_SIZE
-                                );
+                    await cds.tx(
+                        {
+                            tenant,
+                            user: cds.User.privileged
+                        },
+                        async (tx) => {
 
-                            await tx.run(
-                                INSERT
-                                    .into(RoleAuditReport)
-                                    .entries(batch)
-                            );
+                            for (
+                                let i = 0;
+                                i < chunkEntries.length;
+                                i += BATCH_SIZE
+                            ) {
+                                const batch =
+                                    chunkEntries.slice(
+                                        i,
+                                        i + BATCH_SIZE
+                                    );
+
+                                await tx.run(
+                                    INSERT
+                                        .into(RoleAuditReport)
+                                        .entries(batch)
+                                );
+                            }
                         }
-                    });
+                    );
 
                     totalProcessedRecords +=
                         chunkEntries.length;
@@ -533,26 +560,23 @@ module.exports = cds.service.impl(async function () {
                 );
 
                 // update sync status after successful chunk
-                await cds.tx(async (tx) => {
-                    await tx.run(
-                        UPDATE(ReportSyncStatus)
-                            .set({
-                                lastSyncAt: timeTo,
-                                lastRunAt: timeTo,
-                                lastSyncStatus: "SUCCESS",
-                                isRunning: true,
-                                runningSince:
-                                    syncStatus.runningSince,
-                                message:
-                                    `Role Audit synchronization in progress. ` +
-                                    `Completed chunk ${timeFrom} → ${timeTo}. ` +
-                                    `${totalProcessedRecords} records processed.`
-                            })
-                            .where({
-                                reportName: "ROLE_AUDIT"
-                            })
-                    );
-                });
+                await run(
+                    UPDATE(ReportSyncStatus)
+                        .set({
+                            lastSyncAt: timeTo,
+                            lastRunAt: timeTo,
+                            lastSyncStatus: "SUCCESS",
+                            isRunning: true,
+                            runningSince: syncStatus.runningSince,
+                            message:
+                                `Role Audit synchronization in progress. ` +
+                                `Completed chunk ${timeFrom} → ${timeTo}. ` +
+                                `${totalProcessedRecords} records processed.`
+                        })
+                        .where({
+                            reportName: "ROLE_AUDIT"
+                        })
+                );
 
                 chunkFrom = new Date(chunkTo);
             }
@@ -565,22 +589,20 @@ module.exports = cds.service.impl(async function () {
                 `Synchronization completed successfully. ` +
                 `${totalProcessedRecords} Role Audit records processed.`;
 
-            await cds.tx(async (tx) => {
-                await tx.run(
-                    UPDATE(ReportSyncStatus)
-                        .set({
-                            lastSyncAt: finalTime,
-                            lastRunAt: finalTime,
-                            lastSyncStatus: "SUCCESS",
-                            isRunning: false,
-                            runningSince: null,
-                            message
-                        })
-                        .where({
-                            reportName: "ROLE_AUDIT"
-                        })
-                );
-            });
+            await run(
+                UPDATE(ReportSyncStatus)
+                    .set({
+                        lastSyncAt: finalTime,
+                        lastRunAt: finalTime,
+                        lastSyncStatus: "SUCCESS",
+                        isRunning: false,
+                        runningSince: null,
+                        message
+                    })
+                    .where({
+                        reportName: "ROLE_AUDIT"
+                    })
+            );
 
             return {
                 status: "SUCCESS",
@@ -591,26 +613,38 @@ module.exports = cds.service.impl(async function () {
             };
 
         } catch (err) {
-            const errorMessage =
-                getErrorMessage(err);
+            const errorMessage = getErrorMessage(err);
 
-            await UPDATE(ReportSyncStatus)
-                .set({
-                    lastRunAt: new Date(),
-                    lastSyncStatus: "FAILED",
-                    isRunning: false,
-                    runningSince: null,
-                    message: errorMessage
-                })
-                .where({
-                    reportName: "ROLE_AUDIT"
-                });
-
+            await run(
+                UPDATE(ReportSyncStatus)
+                    .set({
+                        lastRunAt: new Date(),
+                        lastSyncStatus: "FAILED",
+                        isRunning: false,
+                        runningSince: null,
+                        message: errorMessage
+                    })
+                    .where({
+                        reportName: "ROLE_AUDIT"
+                    })
+            );
             throw new Error(errorMessage);
         }
     });
     //========= CONFIGURATION REPORT===================
-    this.on("syncConfigurationAuditLogs", async () => {
+    this.on("syncConfigurationAuditLogs", async (req) => {
+        // Every DB operation in this long-running background job
+        // must use this helper so it gets its own short transaction.
+        const tenant = req.tenant;
+        const run = (query) =>
+            cds.tx(
+                {
+                    tenant,
+                    user: cds.User.privileged
+                },
+                tx => tx.run(query)
+            );
+
         try {
             // Calculate the initial 90-day sync range
             const threeMonthAgo = new Date(
@@ -620,9 +654,7 @@ module.exports = cds.service.impl(async function () {
             // Acquire synchronization lock
             const lockResult = await acquireSyncLock({
                 reportName: "CONFIGURATION",
-                SELECT,
-                INSERT,
-                UPDATE,
+                run,
                 ReportSyncStatus
             });
 
@@ -640,17 +672,17 @@ module.exports = cds.service.impl(async function () {
             const failedConnections = [];
 
             // Fetch active Audit Log connections
-            const connections = await SELECT
+            const connections = await run(SELECT
                 .from(BTPConnection)
                 .where({
                     serviceType: "AUDIT_LOG",
                     active: true
-                });
+                }));
 
             if (!connections || connections.length === 0) {
                 const lastRunAt = formatAuditTimestamp(new Date());
 
-                await UPDATE(ReportSyncStatus)
+                await run(UPDATE(ReportSyncStatus)
                     .set({
                         lastSyncStatus: "SUCCESS",
                         isRunning: false,
@@ -661,7 +693,7 @@ module.exports = cds.service.impl(async function () {
                     })
                     .where({
                         reportName: "CONFIGURATION"
-                    });
+                    }));
 
                 return {
                     status: "SUCCESS",
@@ -673,12 +705,12 @@ module.exports = cds.service.impl(async function () {
             }
 
             // Get ACCOUNTS connection
-            const accountsConnection = await SELECT.one
+            const accountsConnection = await run(SELECT.one
                 .from(BTPConnection)
                 .where({
                     serviceType: "ACCOUNTS",
                     active: true
-                });
+                }));
 
             // Build subaccount map
             const subaccountMap = await fetchSubaccountMapConfig({
@@ -741,7 +773,7 @@ module.exports = cds.service.impl(async function () {
                             oAuthManager,
                             fetchIdentityProviders,
                             failedConnections,
-                            SELECT
+                            run
                         });
 
                     // Fetch user map
@@ -752,7 +784,7 @@ module.exports = cds.service.impl(async function () {
                             cfAuth,
                             fetchAllUsers,
                             failedConnections,
-                            SELECT
+                            run
                         });
 
                     // Fetch service instance map
@@ -763,7 +795,8 @@ module.exports = cds.service.impl(async function () {
                             failedConnections,
                             fetchServiceInstances,
                             buildInstanceMap,
-                            oAuthManager
+                            oAuthManager,
+                            run
                         );
 
                     // Process Configuration Audit Logs
@@ -833,14 +866,14 @@ module.exports = cds.service.impl(async function () {
 
                     // Process Cloud Foundry Audit Logs
                     try {
-                        const cfConnection = await SELECT.one
+                        const cfConnection = await run(SELECT.one
                             .from(BTPConnection)
                             .where({
                                 serviceType: "CLOUD_FOUNDRY",
                                 active: true,
                                 subaccountId:
                                     connection.subaccountId
-                            });
+                            }));
 
                         if (!cfConnection) {
                             throw new Error(
@@ -909,50 +942,55 @@ module.exports = cds.service.impl(async function () {
                 if (uniqueEntries.length > 0) {
                     const BATCH_SIZE = 500;
 
-                    await cds.tx(async (tx) => {
-                        for (
-                            let i = 0;
-                            i < uniqueEntries.length;
-                            i += BATCH_SIZE
-                        ) {
-                            const batch =
-                                uniqueEntries.slice(
-                                    i,
-                                    i + BATCH_SIZE
-                                );
+                    await cds.tx(
+                        {
+                            tenant,
+                            user: cds.User.privileged
+                        },
+                        async (tx) => {
 
-                            await tx.run(
-                                INSERT
-                                    .into(ConfigurationReport)
-                                    .entries(batch)
-                            );
+                            for (
+                                let i = 0;
+                                i < uniqueEntries.length;
+                                i += BATCH_SIZE
+                            ) {
+                                const batch =
+                                    uniqueEntries.slice(
+                                        i,
+                                        i + BATCH_SIZE
+                                    );
+
+                                await tx.run(
+                                    INSERT
+                                        .into(ConfigurationReport)
+                                        .entries(batch)
+                                );
+                            }
                         }
-                    });
+                    );
                 }
 
                 totalProcessedRecords +=
                     uniqueEntries.length;
 
                 // Save progress after each successful chunk
-                await cds.tx(async (tx) => {
-                    await tx.run(
-                        UPDATE(ReportSyncStatus)
-                            .set({
-                                lastSyncAt: timeTo,
-                                lastRunAt: timeTo,
-                                lastSyncStatus: "SUCCESS",
-                                isRunning: true,
-                                runningSince:
-                                    syncStatus.runningSince,
-                                message:
-                                    `Configuration Audit synchronization progress: ${totalProcessedRecords} records processed.`
-                            })
-                            .where({
-                                reportName:
-                                    "CONFIGURATION"
-                            })
-                    );
-                });
+                await run(
+                    UPDATE(ReportSyncStatus)
+                        .set({
+                            lastSyncAt: timeTo,
+                            lastRunAt: timeTo,
+                            lastSyncStatus: "SUCCESS",
+                            isRunning: true,
+                            runningSince:
+                                syncStatus.runningSince,
+                            message:
+                                `Configuration Audit synchronization progress: ` +
+                                `${totalProcessedRecords} records processed.`
+                        })
+                        .where({
+                            reportName: "CONFIGURATION"
+                        })
+                );
 
                 console.log(
                     `[CONFIGURATION] Chunk completed: ${timeFrom} to ${timeTo}. Records: ${uniqueEntries.length}`
@@ -968,23 +1006,20 @@ module.exports = cds.service.impl(async function () {
                 `Synchronization completed successfully. ${totalProcessedRecords} Configuration Audit records processed.`;
 
             // Mark the complete synchronization as successful
-            await cds.tx(async (tx) => {
-                await tx.run(
-                    UPDATE(ReportSyncStatus)
-                        .set({
-                            lastSyncAt: finalTime,
-                            lastRunAt: finalTime,
-                            lastSyncStatus: "SUCCESS",
-                            isRunning: false,
-                            runningSince: null,
-                            message
-                        })
-                        .where({
-                            reportName:
-                                "CONFIGURATION"
-                        })
-                );
-            });
+            await run(
+                UPDATE(ReportSyncStatus)
+                    .set({
+                        lastSyncAt: finalTime,
+                        lastRunAt: finalTime,
+                        lastSyncStatus: "SUCCESS",
+                        isRunning: false,
+                        runningSince: null,
+                        message
+                    })
+                    .where({
+                        reportName: "CONFIGURATION"
+                    })
+            );
 
             return {
                 status: "SUCCESS",
@@ -997,33 +1032,45 @@ module.exports = cds.service.impl(async function () {
             };
         } catch (err) {
             // Mark synchronization as failed
-            await UPDATE(ReportSyncStatus)
-                .set({
-                    lastRunAt:
-                        formatAuditTimestamp(new Date()),
-                    lastSyncStatus: "FAILED",
-                    isRunning: false,
-                    runningSince: null,
-                    message: err.message
-                })
-                .where({
-                    reportName: "CONFIGURATION"
-                });
+            await run(
+                UPDATE(ReportSyncStatus)
+                    .set({
+                        lastRunAt:
+                            formatAuditTimestamp(new Date()),
+                        lastSyncStatus: "FAILED",
+                        isRunning: false,
+                        runningSince: null,
+                        message: err.message
+                    })
+                    .where({
+                        reportName: "CONFIGURATION"
+                    })
+            );
 
             throw err;
         }
     });
     // ====================== user report sync ======================
-    this.on("syncUserAuditLogs", async () => {
+    this.on("syncUserAuditLogs", async (req) => {
+        // Every DB operation in this long-running background job
+        // must use this helper so it gets its own short transaction.
+        const tenant = req.tenant;
+        const run = (query) =>
+            cds.tx(
+                {
+                    tenant,
+                    user: cds.User.privileged
+                },
+                tx => tx.run(query)
+            );
+
         const threeMonthsAgo = new Date(
             Date.now() - 90 * 24 * 60 * 60 * 1000
         ).toISOString();
 
         const lockResult = await acquireSyncLock({
             reportName: "USER_AUDIT",
-            SELECT,
-            INSERT,
-            UPDATE,
+            run,
             ReportSyncStatus
         });
 
@@ -1042,17 +1089,17 @@ module.exports = cds.service.impl(async function () {
             const failedConnections = [];
 
             // Fetch active Audit Log connections
-            const connections = await SELECT
+            const connections = await run(SELECT
                 .from(BTPConnection)
                 .where({
                     serviceType: "AUDIT_LOG",
                     active: true
-                });
+                }));
 
             if (!connections || connections.length === 0) {
                 const timeTo = formatAuditTimestamp(new Date());
 
-                await UPSERT.into(ReportSyncStatus).entries({
+                await run(UPSERT.into(ReportSyncStatus).entries({
                     reportName: "USER_AUDIT",
                     lastRunAt: timeTo,
                     lastSyncStatus: "SUCCESS",
@@ -1060,7 +1107,7 @@ module.exports = cds.service.impl(async function () {
                     runningSince: null,
                     ID: syncStatusId,
                     message: "No active Audit Log connections found."
-                });
+                }));
 
                 return "No active Audit Log connections found";
             }
@@ -1074,12 +1121,12 @@ module.exports = cds.service.impl(async function () {
             ];
 
             // Get ACCOUNTS connection
-            const accountsConnection = await SELECT.one
+            const accountsConnection = await run(SELECT.one
                 .from(BTPConnection)
                 .where({
                     serviceType: "ACCOUNTS",
                     active: true
-                });
+                }));
 
             const subaccountMap = new Map();
 
@@ -1177,7 +1224,8 @@ module.exports = cds.service.impl(async function () {
                                 failedConnections,
                                 fetchServiceInstances,
                                 buildInstanceMap,
-                                oAuthManager
+                                oAuthManager,
+                                run
                             );
 
                         console.log(
@@ -1201,13 +1249,13 @@ module.exports = cds.service.impl(async function () {
                     let userMap = new Map();
 
                     try {
-                        const userConnection = await SELECT.one
+                        const userConnection = await run(SELECT.one
                             .from(BTPConnection)
                             .where({
                                 subaccountId: cleanSubaccountId,
                                 serviceType: "XSUAA",
                                 active: true
-                            });
+                            }));
 
                         if (!userConnection) {
                             throw new Error(
@@ -1365,13 +1413,19 @@ module.exports = cds.service.impl(async function () {
 
 
 
-                        await cds.tx(async tx => {
-                            await tx.run(
-                                UPSERT
-                                    .into(UserAuditReport)
-                                    .entries(batch)
-                            );
-                        });
+                        await cds.tx(
+                            {
+                                tenant,
+                                user: cds.User.privileged
+                            },
+                            async tx => {
+                                await tx.run(
+                                    UPSERT
+                                        .into(UserAuditReport)
+                                        .entries(batch)
+                                );
+                            }
+                        );
 
                         processedRecords += batch.length;
 
@@ -1385,24 +1439,23 @@ module.exports = cds.service.impl(async function () {
                 totalProcessedRecords += processedRecords;
 
                 // Save progress after each successful chunk
-                await cds.tx(async tx => {
-                    await tx.run(
-                        UPDATE(ReportSyncStatus)
-                            .set({
-                                lastSyncAt: timeTo,
-                                lastRunAt: timeTo,
-                                lastSyncStatus: "SUCCESS",
-                                isRunning: true,
-                                runningSince:
-                                    syncStatus.runningSince,
-                                message:
-                                    `User Audit synchronization progress: ${totalProcessedRecords} records processed.`
-                            })
-                            .where({
-                                ID: syncStatusId
-                            })
-                    );
-                });
+                await run(
+                    UPDATE(ReportSyncStatus)
+                        .set({
+                            lastSyncAt: timeTo,
+                            lastRunAt: timeTo,
+                            lastSyncStatus: "SUCCESS",
+                            isRunning: true,
+                            runningSince:
+                                syncStatus.runningSince,
+                            message:
+                                `User Audit synchronization progress: ${totalProcessedRecords} records processed.`
+                        })
+                        .where({
+                            ID: syncStatusId
+                        })
+                );
+
 
                 console.log(
                     `[USER AUDIT] Chunk completed: ${timeFrom} -> ${timeTo} | ` +
@@ -1430,25 +1483,24 @@ module.exports = cds.service.impl(async function () {
                 );
 
             // Mark the complete synchronization status
-            await cds.tx(async tx => {
-                await tx.run(
-                    UPDATE(ReportSyncStatus)
-                        .set({
-                            lastSyncAt:
-                                syncResult === "SUCCESS"
-                                    ? finalTime
-                                    : syncStatus.lastSyncAt,
-                            lastRunAt: finalTime,
-                            lastSyncStatus: syncResult,
-                            isRunning: false,
-                            runningSince: null,
-                            message: syncMessage
-                        })
-                        .where({
-                            ID: syncStatusId
-                        })
-                );
-            });
+            await run(
+                UPDATE(ReportSyncStatus)
+                    .set({
+                        lastSyncAt:
+                            syncResult === "SUCCESS"
+                                ? finalTime
+                                : syncStatus.lastSyncAt,
+                        lastRunAt: finalTime,
+                        lastSyncStatus: syncResult,
+                        isRunning: false,
+                        runningSince: null,
+                        message: syncMessage
+                    })
+                    .where({
+                        ID: syncStatusId
+                    })
+            );
+
 
             return {
                 status: syncResult,
@@ -1463,22 +1515,21 @@ module.exports = cds.service.impl(async function () {
             );
 
             // Mark synchronization as failed
-            await cds.tx(async tx => {
-                await tx.run(
-                    UPDATE(ReportSyncStatus)
-                        .set({
-                            lastRunAt:
-                                formatAuditTimestamp(new Date()),
-                            lastSyncStatus: "FAILED",
-                            isRunning: false,
-                            runningSince: null,
-                            message: err.message
-                        })
-                        .where({
-                            ID: syncStatusId
-                        })
-                );
-            });
+
+            await run(
+                UPDATE(ReportSyncStatus)
+                    .set({
+                        lastRunAt:
+                            formatAuditTimestamp(new Date()),
+                        lastSyncStatus: "FAILED",
+                        isRunning: false,
+                        runningSince: null,
+                        message: err.message
+                    })
+                    .where({
+                        ID: syncStatusId
+                    })
+            );
 
             throw err;
         }

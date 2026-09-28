@@ -4,7 +4,7 @@ async function fetchUserMapForSubaccount({
     cfAuth,
     fetchAllUsers,
     failedConnections,
-    SELECT
+    run
 }) {
 
     const userMap = new Map();
@@ -12,13 +12,13 @@ async function fetchUserMapForSubaccount({
     try {
 
         const cfConnection =
-            await SELECT.one
+            await run(SELECT.one
                 .from(BTPConnection)
                 .where({
                     serviceType: "CLOUD_FOUNDRY",
                     active: true,
                     subaccountId
-                });
+                }));
 
         if (!cfConnection) {
             return userMap;

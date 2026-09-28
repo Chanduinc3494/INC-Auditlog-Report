@@ -4,16 +4,14 @@
  */
 async function acquireSyncLock({
     reportName,
-    SELECT,
-    INSERT,
-    UPDATE,
+    run,
     ReportSyncStatus
 }) {
-    let syncStatus = await SELECT.one
+    let syncStatus = await run(SELECT.one
         .from(ReportSyncStatus)
         .where({
             reportName
-        });
+        }));
 
     const isFirstSync = !syncStatus?.lastSyncAt;
 
@@ -56,7 +54,7 @@ async function acquireSyncLock({
             `timeout=${LOCK_TIMEOUT_MS / 60 / 1000} minutes`
         );
 
-        await UPDATE(ReportSyncStatus)
+        await run(UPDATE(ReportSyncStatus)
             .set({
                 isRunning: false,
                 lastSyncStatus: "FAILED",
@@ -66,14 +64,14 @@ async function acquireSyncLock({
             })
             .where({
                 reportName
-            });
+            }));
 
         // Refresh status after stale-lock recovery
-        syncStatus = await SELECT.one
+        syncStatus = await run(SELECT.one
             .from(ReportSyncStatus)
             .where({
                 reportName
-            });
+            }));
     }
 
     // ============================================================
@@ -84,14 +82,14 @@ async function acquireSyncLock({
 
     if (!syncStatus) {
 
-        await INSERT
+        await run(INSERT
             .into(ReportSyncStatus)
             .entries({
                 reportName,
                 lastSyncStatus: "RUNNING",
                 isRunning: true,
                 runningSince
-            });
+            }));
 
         syncStatus = {
             reportName,
@@ -102,7 +100,7 @@ async function acquireSyncLock({
 
     } else {
 
-        await UPDATE(ReportSyncStatus)
+        await run(UPDATE(ReportSyncStatus)
             .set({
                 isRunning: true,
                 runningSince,
@@ -110,7 +108,7 @@ async function acquireSyncLock({
             })
             .where({
                 reportName
-            });
+            }));
     }
 
     return {

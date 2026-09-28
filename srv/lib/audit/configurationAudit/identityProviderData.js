@@ -4,7 +4,7 @@ async function fetchIdentityProviderMapForSubaccount({
     oAuthManager,
     fetchIdentityProviders,
     failedConnections,
-    SELECT
+    run
 }) {
 
     const identityProviderMap =
@@ -13,13 +13,13 @@ async function fetchIdentityProviderMapForSubaccount({
     try {
 
         const identityProviderConnection =
-            await SELECT.one
+            await run(SELECT.one
                 .from(BTPConnection)
                 .where({
                     serviceType: "XSUAA",
                     active: true,
                     subaccountId
-                });
+                }));
 
         /*
          * XSUAA connection is optional.

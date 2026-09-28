@@ -4,17 +4,18 @@ async function fetchInstanceMapForSubaccount(
     failedConnections,
     fetchServiceInstances,
     buildInstanceMap,
-    oAuthManager
+    oAuthManager,
+    run
 ) {
     const instanceMap = new Map();
 
     try {
         const serviceManagerConnections =
-            await SELECT.from(BTPConnection).where({
+            await run(SELECT.from(BTPConnection).where({
                 serviceType: "SERVICE_MANAGER",
                 active: true,
                 subaccountId
-            });
+            }));
 
         if (
             !serviceManagerConnections ||

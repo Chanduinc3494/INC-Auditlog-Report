@@ -5,7 +5,7 @@ async function fetchInstanceUsers(
     cfAuth,
     fetchUsers,
     BTPConnection,
-    SELECT
+    run
 ) {
 
     const userGuids = [
@@ -22,14 +22,14 @@ async function fetchInstanceUsers(
         return userMap;
     }
 
-    const cfConnection = await SELECT
+    const cfConnection = await run(SELECT
         .one
         .from(BTPConnection)
         .where({
             subaccountId: connection.subaccountId,
             serviceType: "CLOUD_FOUNDRY",
             active: true
-        });
+        }));
 
     if (!cfConnection) {
         return userMap;
